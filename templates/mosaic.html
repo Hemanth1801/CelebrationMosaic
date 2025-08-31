@@ -9,7 +9,7 @@
         <div class="text-center mb-3">
             <a href="{{ url_for('index') }}" class="btn btn-primary me-2">🎊 Add Another Entry</a>
             <a href="{{ url_for('admin') }}" class="btn btn-outline-secondary me-2">⚙️ Admin</a>
-            <button onclick="testAnimation()" class="btn btn-outline-warning btn-sm">🧪 Test Animation</button>
+            <button onclick="testAnimation()" class="btn btn-outline-warning btn-sm">🎉 Test Celebration</button>
         </div>
         
         <div class="photo-mosaic-wrapper" id="photoMosaicWrapper">
@@ -58,6 +58,19 @@ let currentLogoUrl = '';
 document.addEventListener('DOMContentLoaded', function() {
     initializePhotoMosaic();
     initializeTooltips();
+    
+    // Check if we should celebrate a new submission
+    const urlParams = new URLSearchParams(window.location.search);
+    const shouldCelebrate = urlParams.get('celebrate') === 'true';
+    if (shouldCelebrate) {
+        // Clear the URL parameter
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Start celebration after brief delay
+        setTimeout(() => {
+            startCelebration();
+        }, 500);
+    }
 });
 
 function initializeTooltips() {
@@ -334,6 +347,7 @@ function checkForNewEntries() {
 }
 
 function refreshMosaic(entries = null, animateNew = false) {
+    return new Promise((resolve) => {
     // If entries not provided, fetch them along with settings
     if (entries === null) {
         Promise.all([
@@ -350,9 +364,11 @@ function refreshMosaic(entries = null, animateNew = false) {
             }
             
             updatePhotoMosaicGrid(entries, settings, animateNew);
+            resolve();
         })
         .catch(error => {
             console.error('Error refreshing mosaic:', error);
+            resolve();
         });
     } else {
         // Use provided entries and fetch only settings
@@ -368,13 +384,15 @@ function refreshMosaic(entries = null, animateNew = false) {
                 }
                 
                 updatePhotoMosaicGrid(entries, settings, animateNew);
+                resolve();
             })
             .catch(error => {
                 console.error('Error fetching settings:', error);
                 // Fallback to just entries without settings
                 updatePhotoMosaicGrid(entries, null, animateNew);
+                resolve();
             });
-    }
+    });
 }
 
 async function getEntryPositions(entryCount, totalPositions) {
@@ -490,7 +508,6 @@ function updatePhotoMosaicGrid(entries, settings = null, animateNewest = false) 
         
         // Mark newest tile for animation if it's a new entry
         if ((isNewEntry && index === entries.length - 1) || (animateNewest && index === entries.length - 1)) {
-            console.log('Marking tile as newest for animation:', index, entries.length - 1);
             tile.classList.add('newest-tile');
         }
         
@@ -502,13 +519,7 @@ function updatePhotoMosaicGrid(entries, settings = null, animateNewest = false) 
         await positionTiles(settings);
         initializeTooltips();
         
-        // Trigger animation for newest tile
-        const newestTile = grid.querySelector('.newest-tile');
-        console.log('Looking for newest tile:', newestTile, 'Should animate:', (isNewEntry || animateNewest));
-        if (newestTile && (isNewEntry || animateNewest)) {
-            console.log('Triggering animation for newest tile');
-            animateNewTile(newestTile);
-        }
+        // Note: Animation now handled by celebration popup system
     }, 50);
     
     // Update counter
@@ -521,31 +532,118 @@ function updatePhotoMosaicGrid(entries, settings = null, animateNewest = false) 
     }
 }
 
-function animateNewTile(tile) {
-    console.log('Starting animation for tile:', tile);
+function startCelebration() {
+    // Create confetti
+    createConfetti();
     
-    // Store the final position
-    const finalLeft = tile.style.left;
-    const finalTop = tile.style.top;
+    // Get the newest entry to display in popup
+    fetch('/api/entries')
+        .then(response => response.json())
+        .then(entries => {
+            if (entries.length > 0) {
+                const newestEntry = entries[entries.length - 1];
+                showCelebrationPopup(newestEntry);
+            }
+        })
+        .catch(error => {
+            console.error('Error getting newest entry:', error);
+        });
+}
+
+function createConfetti() {
+    const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffa500', '#ff69b4'];
     
-    console.log('Final position:', finalLeft, finalTop);
+    for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.left = Math.random() * 100 + 'vw';
+        confetti.style.animationDelay = Math.random() * 3 + 's';
+        confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+        
+        document.body.appendChild(confetti);
+        
+        // Remove confetti after animation
+        setTimeout(() => {
+            confetti.remove();
+        }, 5000);
+    }
+}
+
+function showCelebrationPopup(entry) {
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'celebration-overlay';
     
-    // Set final position as CSS custom properties for animation
-    tile.style.setProperty('--final-left', finalLeft);
-    tile.style.setProperty('--final-top', finalTop);
+    // Create popup tile
+    const popupTile = document.createElement('div');
+    popupTile.className = 'photo-tile celebration-popup';
     
-    // Add animation class and start from center
-    tile.classList.add('tile-falling');
+    const name = entry.name.length > 15 ? entry.name.substring(0, 15) + '...' : entry.name;
+    const message = entry.message.length > 50 ? entry.message.substring(0, 50) + '...' : entry.message;
     
-    console.log('Added tile-falling class');
+    popupTile.innerHTML = `
+        <div class="tile-bg-symbol">
+            <img src="/static/symbols/${entry.symbol}" alt="Symbol" class="symbol-image">
+        </div>
+        <div class="tile-content">
+            <div class="tile-name">${escapeHtml(name)}</div>
+            <div class="tile-message">${escapeHtml(message)}</div>
+        </div>
+    `;
     
-    // After animation completes, clean up
+    overlay.appendChild(popupTile);
+    document.body.appendChild(overlay);
+    
+    // After popup animation, move to grid
     setTimeout(() => {
-        console.log('Animation complete, cleaning up');
-        tile.classList.remove('tile-falling', 'newest-tile');
-        tile.style.left = finalLeft;
-        tile.style.top = finalTop;
-    }, 1500);
+        movePopupToGrid(popupTile, overlay, entry);
+    }, 2000);
+}
+
+function movePopupToGrid(popupTile, overlay, entry) {
+    // Refresh the mosaic to get the newest tile positioned
+    refreshMosaic(null, false).then(() => {
+        // Find the newest tile in the grid
+        const gridTiles = document.querySelectorAll('.photo-tile:not(.celebration-popup)');
+        if (gridTiles.length > 0) {
+            const newestGridTile = gridTiles[gridTiles.length - 1];
+            
+            // Get target position
+            const rect = newestGridTile.getBoundingClientRect();
+            const finalLeft = newestGridTile.style.left;
+            const finalTop = newestGridTile.style.top;
+            const finalWidth = newestGridTile.style.width;
+            const finalHeight = newestGridTile.style.height;
+            
+            // Hide the grid tile temporarily
+            newestGridTile.style.opacity = '0';
+            
+            // Set final position properties for animation
+            popupTile.style.setProperty('--final-left', finalLeft);
+            popupTile.style.setProperty('--final-top', finalTop);
+            popupTile.style.setProperty('--final-width', finalWidth);
+            popupTile.style.setProperty('--final-height', finalHeight);
+            
+            // Start the falling animation
+            popupTile.classList.add('tile-falling');
+            
+            // After animation completes
+            setTimeout(() => {
+                // Remove overlay and popup
+                overlay.remove();
+                
+                // Show the grid tile with a nice fade in
+                newestGridTile.style.opacity = '1';
+                newestGridTile.style.transform = 'scale(1.1)';
+                newestGridTile.style.transition = 'all 0.3s ease';
+                
+                setTimeout(() => {
+                    newestGridTile.style.transform = 'scale(1)';
+                }, 100);
+            }, 1500);
+        }
+    });
 }
 
 function triggerNewestTileAnimation() {
@@ -559,16 +657,8 @@ function triggerNewestTileAnimation() {
 }
 
 function testAnimation() {
-    console.log('Test animation triggered');
-    const tiles = document.querySelectorAll('.photo-tile');
-    if (tiles.length > 0) {
-        // Pick a random tile to animate
-        const randomTile = tiles[Math.floor(Math.random() * tiles.length)];
-        console.log('Animating random tile:', randomTile);
-        animateNewTile(randomTile);
-    } else {
-        console.log('No tiles found to animate');
-    }
+    // Test the celebration sequence
+    startCelebration();
 }
 
 function escapeHtml(text) {

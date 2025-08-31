@@ -266,35 +266,93 @@ footer {
     }
 }
 
-/* New tile falling animation from center to grid position */
-@keyframes fallToPosition {
+/* Confetti animation */
+@keyframes confetti-fall {
     0% {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(0.5);
-        z-index: 1001;
-        position: fixed;
-        left: 50vw;
-        top: 50vh;
-    }
-    25% {
+        transform: translateY(-100vh) rotate(0deg);
         opacity: 1;
-        transform: translate(-50%, -50%) scale(1.2);
-        position: fixed;
-        left: 50vw;
-        top: 50vh;
     }
     100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+.confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    background: #f0f;
+    animation: confetti-fall 3s linear forwards;
+    pointer-events: none;
+    z-index: 10000;
+}
+
+/* Celebration popup tile */
+.celebration-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    width: 300px;
+    height: 300px;
+    z-index: 9999;
+    border-radius: 15px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    animation: celebrationPopup 2s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+@keyframes celebrationPopup {
+    0% {
+        transform: translate(-50%, -50%) scale(0) rotate(-180deg);
+        opacity: 0;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.2) rotate(0deg);
         opacity: 1;
-        transform: translate(0, 0) scale(1);
+    }
+    70% {
+        transform: translate(-50%, -50%) scale(1.1) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+        opacity: 1;
+    }
+}
+
+/* New tile falling animation from popup to grid position */
+@keyframes fallToPosition {
+    0% {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(1);
+        width: 300px;
+        height: 300px;
+        z-index: 9999;
+        opacity: 1;
+    }
+    100% {
         position: absolute;
         left: var(--final-left);
         top: var(--final-top);
+        transform: translate(0, 0) scale(1);
+        width: var(--final-width);
+        height: var(--final-height);
+        z-index: 1;
+        opacity: 1;
     }
 }
 
 .tile-falling {
-    animation: fallToPosition 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    z-index: 1000;
+    animation: fallToPosition 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    border-radius: 15px;
+    transition: border-radius 1.5s ease;
+}
+
+.tile-falling.animation-complete {
+    border-radius: 4px;
 }
 
 .mosaic-tile {
@@ -324,6 +382,28 @@ footer {
 .badge {
     font-size: 0.9rem;
     padding: 0.5rem 1rem;
+}
+
+/* Celebration overlay */
+.celebration-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    animation: fadeInOverlay 0.5s ease forwards;
+}
+
+@keyframes fadeInOverlay {
+    to {
+        opacity: 1;
+    }
 }
 
 /* Button enhancements */

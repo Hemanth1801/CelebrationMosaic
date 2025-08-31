@@ -82,5 +82,19 @@
     "message": "yesss",
     "symbol": "rocket.png",
     "timestamp": "2025-08-31T18:37:06.419814"
+  },
+  {
+    "id": "bfab39ff-ba77-43d9-ab08-aa53744037ff",
+    "name": "kumar",
+    "message": "new here",
+    "symbol": "diya.png",
+    "timestamp": "2025-08-31T18:42:36.043471"
+  },
+  {
+    "id": "e7845046-8104-4d9a-b4cc-6b96f82eddc5",
+    "name": "chinnu",
+    "message": "im here",
+    "symbol": "diya.png",
+    "timestamp": "2025-08-31T18:43:14.825887"
   }
 ]
