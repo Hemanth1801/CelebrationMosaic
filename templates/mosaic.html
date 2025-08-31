@@ -8,7 +8,8 @@
         <!-- Add quick navigation -->
         <div class="text-center mb-3">
             <a href="{{ url_for('index') }}" class="btn btn-primary me-2">🎊 Add Another Entry</a>
-            <a href="{{ url_for('admin') }}" class="btn btn-outline-secondary">⚙️ Admin</a>
+            <a href="{{ url_for('admin') }}" class="btn btn-outline-secondary me-2">⚙️ Admin</a>
+            <button onclick="testAnimation()" class="btn btn-outline-warning btn-sm">🧪 Test Animation</button>
         </div>
         
         <div class="photo-mosaic-wrapper" id="photoMosaicWrapper">
@@ -489,6 +490,7 @@ function updatePhotoMosaicGrid(entries, settings = null, animateNewest = false) 
         
         // Mark newest tile for animation if it's a new entry
         if ((isNewEntry && index === entries.length - 1) || (animateNewest && index === entries.length - 1)) {
+            console.log('Marking tile as newest for animation:', index, entries.length - 1);
             tile.classList.add('newest-tile');
         }
         
@@ -502,7 +504,9 @@ function updatePhotoMosaicGrid(entries, settings = null, animateNewest = false) 
         
         // Trigger animation for newest tile
         const newestTile = grid.querySelector('.newest-tile');
+        console.log('Looking for newest tile:', newestTile, 'Should animate:', (isNewEntry || animateNewest));
         if (newestTile && (isNewEntry || animateNewest)) {
+            console.log('Triggering animation for newest tile');
             animateNewTile(newestTile);
         }
     }, 50);
@@ -518,23 +522,30 @@ function updatePhotoMosaicGrid(entries, settings = null, animateNewest = false) 
 }
 
 function animateNewTile(tile) {
+    console.log('Starting animation for tile:', tile);
+    
     // Store the final position
     const finalLeft = tile.style.left;
     const finalTop = tile.style.top;
     
-    // Add animation class and start from center
-    tile.classList.add('tile-falling');
-    
-    // After animation completes, clean up
-    setTimeout(() => {
-        tile.classList.remove('tile-falling', 'newest-tile');
-        tile.style.left = finalLeft;
-        tile.style.top = finalTop;
-    }, 1200);
+    console.log('Final position:', finalLeft, finalTop);
     
     // Set final position as CSS custom properties for animation
     tile.style.setProperty('--final-left', finalLeft);
     tile.style.setProperty('--final-top', finalTop);
+    
+    // Add animation class and start from center
+    tile.classList.add('tile-falling');
+    
+    console.log('Added tile-falling class');
+    
+    // After animation completes, clean up
+    setTimeout(() => {
+        console.log('Animation complete, cleaning up');
+        tile.classList.remove('tile-falling', 'newest-tile');
+        tile.style.left = finalLeft;
+        tile.style.top = finalTop;
+    }, 1500);
 }
 
 function triggerNewestTileAnimation() {
@@ -544,6 +555,19 @@ function triggerNewestTileAnimation() {
         const newestTile = tiles[tiles.length - 1];
         newestTile.classList.add('newest-tile');
         animateNewTile(newestTile);
+    }
+}
+
+function testAnimation() {
+    console.log('Test animation triggered');
+    const tiles = document.querySelectorAll('.photo-tile');
+    if (tiles.length > 0) {
+        // Pick a random tile to animate
+        const randomTile = tiles[Math.floor(Math.random() * tiles.length)];
+        console.log('Animating random tile:', randomTile);
+        animateNewTile(randomTile);
+    } else {
+        console.log('No tiles found to animate');
     }
 }
 
