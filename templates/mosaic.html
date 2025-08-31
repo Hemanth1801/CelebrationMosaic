@@ -57,19 +57,6 @@ let currentLogoUrl = '';
 document.addEventListener('DOMContentLoaded', function() {
     initializePhotoMosaic();
     initializeTooltips();
-    
-    // Check if we should animate newest tile from URL parameter
-    const urlParams = new URLSearchParams(window.location.search);
-    const shouldAnimate = urlParams.get('animate') === 'true';
-    if (shouldAnimate) {
-        // Clear the URL parameter
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Trigger animation after brief delay to ensure tiles are positioned
-        setTimeout(() => {
-            triggerNewestTileAnimation();
-        }, 500);
-    }
 });
 
 function initializeTooltips() {
@@ -110,42 +97,66 @@ function updateLogoOverlay(logoUrl) {
     }
 }
 
-function calculateOptimalGrid(numEntries, settings) {
-    if (settings && settings.grid_mode === 'manual') {
-        return { 
-            cols: settings.grid_cols || 12, 
-            rows: settings.grid_rows || 10 
-        };
-    }
-    
-    if (numEntries === 0) return { cols: 1, rows: 1 };
-    
-    // Calculate grid dimensions based on number of entries
-    // Try to maintain logo aspect ratio (4:3)
-    const aspectRatio = mosaicWidth / mosaicHeight;
-    
-    // Find the best grid size for the number of entries
-    let bestCols = 1, bestRows = 1;
-    let minWaste = Infinity;
-    
-    for (let cols = 1; cols <= Math.ceil(Math.sqrt(numEntries * aspectRatio)) + 5; cols++) {
-        const rows = Math.ceil(numEntries / cols);
-        const totalCells = cols * rows;
-        const waste = totalCells - numEntries;
-        const currentRatio = cols / rows;
-        const ratioError = Math.abs(currentRatio - aspectRatio);
-        
-        // Prefer grids closer to target aspect ratio with less waste
-        const score = waste + (ratioError * 10);
-        
-        if (score < minWaste) {
-            minWaste = score;
-            bestCols = cols;
-            bestRows = rows;
-        }
-    }
-    
-    return { cols: bestCols, rows: bestRows };
+async function calculateOptimalGrid(numEntries, settings) {
+    return new Promise((resolve) => {
+        // Use requestAnimationFrame for smooth non-blocking calculation
+        requestAnimationFrame(() => {
+            if (settings && settings.grid_mode === 'manual') {
+                resolve({ 
+                    cols: settings.grid_cols || 12, 
+                    rows: settings.grid_rows || 10 
+                });
+                return;
+            }
+            
+            if (numEntries === 0) {
+                resolve({ cols: 1, rows: 1 });
+                return;
+            }
+            
+            // Calculate grid dimensions based on number of entries
+            // Try to maintain logo aspect ratio (4:3)
+            const aspectRatio = mosaicWidth / mosaicHeight;
+            
+            // Find the best grid size for the number of entries
+            let bestCols = 1, bestRows = 1;
+            let minWaste = Infinity;
+            
+            const maxCols = Math.ceil(Math.sqrt(numEntries * aspectRatio)) + 5;
+            
+            // Break calculation into chunks to avoid blocking
+            let currentCol = 1;
+            const calculateChunk = () => {
+                const endCol = Math.min(currentCol + 5, maxCols + 1);
+                
+                for (let cols = currentCol; cols < endCol; cols++) {
+                    const rows = Math.ceil(numEntries / cols);
+                    const totalCells = cols * rows;
+                    const waste = totalCells - numEntries;
+                    const currentRatio = cols / rows;
+                    const ratioError = Math.abs(currentRatio - aspectRatio);
+                    
+                    // Prefer grids closer to target aspect ratio with less waste
+                    const score = waste + (ratioError * 10);
+                    
+                    if (score < minWaste) {
+                        minWaste = score;
+                        bestCols = cols;
+                        bestRows = rows;
+                    }
+                }
+                
+                currentCol = endCol;
+                if (currentCol <= maxCols) {
+                    requestAnimationFrame(calculateChunk);
+                } else {
+                    resolve({ cols: bestCols, rows: bestRows });
+                }
+            };
+            
+            calculateChunk();
+        });
+    });
 }
 
 // Removed analyzeBackgroundImage - no longer needed for overlay approach
@@ -169,7 +180,7 @@ function setupDefaultGrid() {
 
 // Removed getPixelData - no longer needed for overlay approach
 
-function positionTiles(settings = null) {
+async function positionTiles(settings = null) {
     const tiles = document.querySelectorAll('.photo-tile');
     const grid = document.getElementById('photoMosaicGrid');
     
@@ -178,7 +189,8 @@ function positionTiles(settings = null) {
     // Calculate optimal grid based on settings and number of entries
     totalEntries = tiles.length;
     
-    const optimalGrid = calculateOptimalGrid(totalEntries, settings);
+    // Run grid calculation asynchronously
+    const optimalGrid = await calculateOptimalGrid(totalEntries, settings);
     gridCols = optimalGrid.cols;
     gridRows = optimalGrid.rows;
     
@@ -189,76 +201,116 @@ function positionTiles(settings = null) {
     const actualWidth = gridCols * tileSize;
     const actualHeight = gridRows * tileSize;
     
-    grid.style.position = 'relative';
-    grid.style.width = actualWidth + 'px';
-    grid.style.height = actualHeight + 'px';
-    grid.style.margin = '0 auto';
-    grid.style.border = '2px solid rgba(255,255,255,0.3)';
-    grid.style.imageRendering = 'pixelated'; // For crisp scaling when needed
-    grid.style.imageRendering = '-moz-crisp-edges';
-    grid.style.imageRendering = 'crisp-edges';
-    
-    // Create simple grid positions for tiles
-    const positions = [];
-    for (let row = 0; row < gridRows; row++) {
-        for (let col = 0; col < gridCols; col++) {
-            const x = col * tileSize;
-            const y = row * tileSize;
-            
-            positions.push({ 
-                x, y, 
-                row, col,
-                index: positions.length
-            });
-        }
-    }
-    
-    // Get or create persistent position assignments for entries
-    const entryPositions = getEntryPositions(tiles.length, positions.length);
-    
-    // Position tiles using persistent entry positions
-    tiles.forEach((tile, index) => {
-        const entryId = tile.getAttribute('data-entry-id');
-        const positionIndex = entryPositions[entryId] || entryPositions[index] || 0;
-        
-        if (positionIndex < positions.length) {
-            const pos = positions[positionIndex];
-            tile.style.position = 'absolute';
-            tile.style.left = pos.x + 'px';
-            tile.style.top = pos.y + 'px';
-            tile.style.width = tileSize + 'px';
-            tile.style.height = tileSize + 'px';
-            
-            // Simple tile styling without color analysis
-            tile.style.transform = 'translateZ(0)'; // Force hardware acceleration
-        }
+    // Apply grid styles immediately
+    requestAnimationFrame(() => {
+        grid.style.position = 'relative';
+        grid.style.width = actualWidth + 'px';
+        grid.style.height = actualHeight + 'px';
+        grid.style.margin = '0 auto';
+        grid.style.border = '2px solid rgba(255,255,255,0.3)';
+        grid.style.imageRendering = 'pixelated';
+        grid.style.imageRendering = '-moz-crisp-edges';
+        grid.style.imageRendering = 'crisp-edges';
     });
     
+    // Create positions and get entry positions in parallel
+    const [positions, entryPositions] = await Promise.all([
+        createGridPositions(gridRows, gridCols, tileSize),
+        getEntryPositions(tiles.length, gridRows * gridCols)
+    ]);
+    
+    // Position tiles in batches for smooth animation
+    await positionTilesInBatches(tiles, positions, entryPositions);
+    
     // Fill remaining positions with empty tiles
-    const totalPositions = gridCols * gridRows;
-    if (totalPositions > tiles.length) {
-        // Find unused positions
-        const usedPositionIndices = new Set(Object.values(entryPositions).slice(0, tiles.length));
-        
-        for (let i = 0; i < positions.length; i++) {
-            if (!usedPositionIndices.has(i)) {
-                const pos = positions[i];
-                const emptyTile = document.createElement('div');
-                emptyTile.className = 'photo-tile empty-tile';
-                emptyTile.style.position = 'absolute';
-                emptyTile.style.left = pos.x + 'px';
-                emptyTile.style.top = pos.y + 'px';
-                emptyTile.style.width = tileSize + 'px';
-                emptyTile.style.height = tileSize + 'px';
-                
-                // Simple empty tile without color analysis
-                emptyTile.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                emptyTile.style.border = '1px solid rgba(255, 255, 255, 0.2)';
-                
-                grid.appendChild(emptyTile);
+    await fillEmptyPositions(grid, positions, entryPositions, tiles.length);
+}
+
+async function createGridPositions(gridRows, gridCols, tileSize) {
+    return new Promise((resolve) => {
+        requestAnimationFrame(() => {
+            const positions = [];
+            for (let row = 0; row < gridRows; row++) {
+                for (let col = 0; col < gridCols; col++) {
+                    const x = col * tileSize;
+                    const y = row * tileSize;
+                    
+                    positions.push({ 
+                        x, y, 
+                        row, col,
+                        index: positions.length
+                    });
+                }
             }
-        }
+            resolve(positions);
+        });
+    });
+}
+
+async function positionTilesInBatches(tiles, positions, entryPositions) {
+    const batchSize = 5;
+    const tilesArray = Array.from(tiles);
+    
+    for (let i = 0; i < tilesArray.length; i += batchSize) {
+        await new Promise((resolve) => {
+            requestAnimationFrame(() => {
+                const batch = tilesArray.slice(i, i + batchSize);
+                
+                batch.forEach((tile, batchIndex) => {
+                    const index = i + batchIndex;
+                    const entryId = tile.getAttribute('data-entry-id');
+                    const positionIndex = entryPositions[entryId] || entryPositions[index] || 0;
+                    
+                    if (positionIndex < positions.length) {
+                        const pos = positions[positionIndex];
+                        tile.style.position = 'absolute';
+                        tile.style.left = pos.x + 'px';
+                        tile.style.top = pos.y + 'px';
+                        tile.style.width = tileSize + 'px';
+                        tile.style.height = tileSize + 'px';
+                        
+                        // Simple tile styling without color analysis
+                        tile.style.transform = 'translateZ(0)'; // Force hardware acceleration
+                    }
+                });
+                
+                resolve();
+            });
+        });
     }
+}
+
+async function fillEmptyPositions(grid, positions, entryPositions, tileCount) {
+    const totalPositions = positions.length;
+    if (totalPositions <= tileCount) return;
+    
+    return new Promise((resolve) => {
+        requestAnimationFrame(() => {
+            // Find unused positions
+            const usedPositionIndices = new Set(Object.values(entryPositions).slice(0, tileCount));
+            
+            for (let i = 0; i < positions.length; i++) {
+                if (!usedPositionIndices.has(i)) {
+                    const pos = positions[i];
+                    const emptyTile = document.createElement('div');
+                    emptyTile.className = 'photo-tile empty-tile';
+                    emptyTile.style.position = 'absolute';
+                    emptyTile.style.left = pos.x + 'px';
+                    emptyTile.style.top = pos.y + 'px';
+                    emptyTile.style.width = tileSize + 'px';
+                    emptyTile.style.height = tileSize + 'px';
+                    
+                    // Simple empty tile without color analysis
+                    emptyTile.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                    emptyTile.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+                    
+                    grid.appendChild(emptyTile);
+                }
+            }
+            
+            resolve();
+        });
+    });
 }
 
 function checkForNewEntries() {
@@ -270,8 +322,9 @@ function checkForNewEntries() {
             
             // Only refresh if entry count changed or it's the first load
             if (currentCount !== lastEntryCount || lastEntryCount === 0) {
+                const wasNewEntry = lastEntryCount > 0 && currentCount > lastEntryCount;
                 lastEntryCount = currentCount;
-                refreshMosaic(entries);
+                refreshMosaic(entries, wasNewEntry);
             }
         })
         .catch(error => {
@@ -279,7 +332,7 @@ function checkForNewEntries() {
         });
 }
 
-function refreshMosaic(entries = null) {
+function refreshMosaic(entries = null, animateNew = false) {
     // If entries not provided, fetch them along with settings
     if (entries === null) {
         Promise.all([
@@ -295,7 +348,7 @@ function refreshMosaic(entries = null) {
                 updateLogoOverlay(newLogoUrl);
             }
             
-            updatePhotoMosaicGrid(entries, settings);
+            updatePhotoMosaicGrid(entries, settings, animateNew);
         })
         .catch(error => {
             console.error('Error refreshing mosaic:', error);
@@ -313,72 +366,76 @@ function refreshMosaic(entries = null) {
                     updateLogoOverlay(newLogoUrl);
                 }
                 
-                updatePhotoMosaicGrid(entries, settings);
+                updatePhotoMosaicGrid(entries, settings, animateNew);
             })
             .catch(error => {
                 console.error('Error fetching settings:', error);
                 // Fallback to just entries without settings
-                updatePhotoMosaicGrid(entries);
+                updatePhotoMosaicGrid(entries, null, animateNew);
             });
     }
 }
 
-function getEntryPositions(entryCount, totalPositions) {
-    // Get existing position assignments from localStorage
-    let savedPositions = {};
-    try {
-        savedPositions = JSON.parse(localStorage.getItem('entryPositions') || '{}');
-    } catch (e) {
-        savedPositions = {};
-    }
-    
-    // Create shuffled position pool if it doesn't exist
-    let availablePositions = [];
-    try {
-        availablePositions = JSON.parse(localStorage.getItem('availablePositions') || '[]');
-    } catch (e) {
-        availablePositions = [];
-    }
-    
-    // Initialize position pool if empty or wrong size
-    if (availablePositions.length === 0 || availablePositions.length !== totalPositions) {
-        availablePositions = Array.from({length: totalPositions}, (_, i) => i);
-        // Shuffle the available positions
-        for (let i = availablePositions.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [availablePositions[i], availablePositions[j]] = [availablePositions[j], availablePositions[i]];
-        }
-        localStorage.setItem('availablePositions', JSON.stringify(availablePositions));
-    }
-    
-    // Assign positions to entries that don't have them
-    const currentEntryIds = Array.from(document.querySelectorAll('.photo-tile')).map(tile => 
-        tile.getAttribute('data-entry-id') || String(Array.from(tile.parentNode.children).indexOf(tile))
-    );
-    
-    let nextPositionIndex = 0;
-    currentEntryIds.forEach((entryId, index) => {
-        if (!(entryId in savedPositions)) {
-            // Find next available position
-            while (nextPositionIndex < availablePositions.length && 
-                   Object.values(savedPositions).includes(availablePositions[nextPositionIndex])) {
-                nextPositionIndex++;
+async function getEntryPositions(entryCount, totalPositions) {
+    return new Promise((resolve) => {
+        requestAnimationFrame(() => {
+            // Get existing position assignments from localStorage
+            let savedPositions = {};
+            try {
+                savedPositions = JSON.parse(localStorage.getItem('entryPositions') || '{}');
+            } catch (e) {
+                savedPositions = {};
             }
             
-            if (nextPositionIndex < availablePositions.length) {
-                savedPositions[entryId] = availablePositions[nextPositionIndex];
-                nextPositionIndex++;
-            } else {
-                // Fallback to index if we run out of positions
-                savedPositions[entryId] = index % totalPositions;
+            // Create shuffled position pool if it doesn't exist
+            let availablePositions = [];
+            try {
+                availablePositions = JSON.parse(localStorage.getItem('availablePositions') || '[]');
+            } catch (e) {
+                availablePositions = [];
             }
-        }
+            
+            // Initialize position pool if empty or wrong size
+            if (availablePositions.length === 0 || availablePositions.length !== totalPositions) {
+                availablePositions = Array.from({length: totalPositions}, (_, i) => i);
+                // Shuffle the available positions
+                for (let i = availablePositions.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [availablePositions[i], availablePositions[j]] = [availablePositions[j], availablePositions[i]];
+                }
+                localStorage.setItem('availablePositions', JSON.stringify(availablePositions));
+            }
+            
+            // Assign positions to entries that don't have them
+            const currentEntryIds = Array.from(document.querySelectorAll('.photo-tile')).map(tile => 
+                tile.getAttribute('data-entry-id') || String(Array.from(tile.parentNode.children).indexOf(tile))
+            );
+            
+            let nextPositionIndex = 0;
+            currentEntryIds.forEach((entryId, index) => {
+                if (!(entryId in savedPositions)) {
+                    // Find next available position
+                    while (nextPositionIndex < availablePositions.length && 
+                           Object.values(savedPositions).includes(availablePositions[nextPositionIndex])) {
+                        nextPositionIndex++;
+                    }
+                    
+                    if (nextPositionIndex < availablePositions.length) {
+                        savedPositions[entryId] = availablePositions[nextPositionIndex];
+                        nextPositionIndex++;
+                    } else {
+                        // Fallback to index if we run out of positions
+                        savedPositions[entryId] = index % totalPositions;
+                    }
+                }
+            });
+            
+            // Save updated positions
+            localStorage.setItem('entryPositions', JSON.stringify(savedPositions));
+            
+            resolve(savedPositions);
+        });
     });
-    
-    // Save updated positions
-    localStorage.setItem('entryPositions', JSON.stringify(savedPositions));
-    
-    return savedPositions;
 }
 
 function updatePhotoMosaicGrid(entries, settings = null, animateNewest = false) {
@@ -438,9 +495,9 @@ function updatePhotoMosaicGrid(entries, settings = null, animateNewest = false) 
         grid.appendChild(tile);
     });
     
-    // Reposition tiles after update
-    setTimeout(() => {
-        positionTiles(settings);
+    // Reposition tiles after update using async positioning
+    setTimeout(async () => {
+        await positionTiles(settings);
         initializeTooltips();
         
         // Trigger animation for newest tile
@@ -448,7 +505,7 @@ function updatePhotoMosaicGrid(entries, settings = null, animateNewest = false) 
         if (newestTile && (isNewEntry || animateNewest)) {
             animateNewTile(newestTile);
         }
-    }, 100);
+    }, 50);
     
     // Update counter
     const badge = document.querySelector('.badge.bg-info');
