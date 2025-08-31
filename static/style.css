@@ -27,10 +27,10 @@
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    opacity: 0.3;
+    opacity: 0.4;
     pointer-events: none;
-    z-index: 1;
-    mix-blend-mode: overlay;
+    z-index: 10;
+    mix-blend-mode: multiply;
 }
 
 .photo-mosaic-grid {
