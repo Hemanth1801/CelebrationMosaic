@@ -8,8 +8,7 @@
         <!-- Add quick navigation -->
         <div class="text-center mb-3">
             <a href="{{ url_for('index') }}" class="btn btn-primary me-2">🎊 Add Another Entry</a>
-            <a href="{{ url_for('admin') }}" class="btn btn-outline-secondary me-2">⚙️ Admin</a>
-            <button onclick="testAnimation()" class="btn btn-outline-warning btn-sm">🎉 Test Celebration</button>
+            <a href="{{ url_for('admin') }}" class="btn btn-outline-secondary">⚙️ Admin</a>
         </div>
         
         <div class="photo-mosaic-wrapper" id="photoMosaicWrapper">
@@ -82,6 +81,9 @@ function initializePhotoMosaic() {
     setupMosaicGrid();
     loadLogoOverlay();
     
+    // Load initial entries immediately
+    checkForNewEntries();
+    
     // Check for new entries every 3 seconds (but only refresh if count changed)
     refreshInterval = setInterval(checkForNewEntries, 3000);
 }
@@ -107,7 +109,6 @@ function updateLogoOverlay(logoUrl) {
     if (logoOverlay && logoUrl !== currentLogoUrl) {
         currentLogoUrl = logoUrl;
         logoOverlay.style.backgroundImage = `url('${logoUrl}')`;
-        console.log('Logo overlay updated:', logoUrl);
     }
 }
 
@@ -183,13 +184,17 @@ function setupMosaicGrid() {
     wrapper.style.margin = '0 auto';
 }
 
-function setupDefaultGrid() {
+async function setupDefaultGrid() {
     // Use fixed resolution even when background image fails
-    const grid = calculateOptimalGrid(totalEntries, null);
-    gridCols = grid.cols;
-    gridRows = grid.rows;
-    tileSize = Math.min(mosaicWidth / gridCols, mosaicHeight / gridRows);
-    positionTiles();
+    try {
+        const grid = await calculateOptimalGrid(totalEntries, null);
+        gridCols = grid.cols;
+        gridRows = grid.rows;
+        tileSize = Math.min(mosaicWidth / gridCols, mosaicHeight / gridRows);
+        await positionTiles();
+    } catch (error) {
+        console.error('Error setting up default grid:', error);
+    }
 }
 
 // Removed getPixelData - no longer needed for overlay approach
@@ -348,33 +353,13 @@ function checkForNewEntries() {
 
 function refreshMosaic(entries = null, animateNew = false) {
     return new Promise((resolve) => {
-    // If entries not provided, fetch them along with settings
-    if (entries === null) {
-        Promise.all([
-            fetch('/api/entries').then(response => response.json()),
-            fetch('/api/admin-settings').then(response => response.json())
-        ])
-        .then(([entries, settings]) => {
-            // Check if logo has changed
-            const newLogoUrl = `/static/${settings.logo_filename}?t=${Date.now()}`;
-            
-            if (newLogoUrl !== currentLogoUrl) {
-                // Logo changed, update overlay
-                updateLogoOverlay(newLogoUrl);
-            }
-            
-            updatePhotoMosaicGrid(entries, settings, animateNew);
-            resolve();
-        })
-        .catch(error => {
-            console.error('Error refreshing mosaic:', error);
-            resolve();
-        });
-    } else {
-        // Use provided entries and fetch only settings
-        fetch('/api/admin-settings')
-            .then(response => response.json())
-            .then(settings => {
+        // If entries not provided, fetch them along with settings
+        if (entries === null) {
+            Promise.all([
+                fetch('/api/entries').then(response => response.json()),
+                fetch('/api/admin-settings').then(response => response.json())
+            ])
+            .then(([entries, settings]) => {
                 // Check if logo has changed
                 const newLogoUrl = `/static/${settings.logo_filename}?t=${Date.now()}`;
                 
@@ -387,11 +372,32 @@ function refreshMosaic(entries = null, animateNew = false) {
                 resolve();
             })
             .catch(error => {
-                console.error('Error fetching settings:', error);
-                // Fallback to just entries without settings
-                updatePhotoMosaicGrid(entries, null, animateNew);
+                console.error('Error refreshing mosaic:', error);
                 resolve();
             });
+        } else {
+            // Use provided entries and fetch only settings
+            fetch('/api/admin-settings')
+                .then(response => response.json())
+                .then(settings => {
+                    // Check if logo has changed
+                    const newLogoUrl = `/static/${settings.logo_filename}?t=${Date.now()}`;
+                    
+                    if (newLogoUrl !== currentLogoUrl) {
+                        // Logo changed, update overlay
+                        updateLogoOverlay(newLogoUrl);
+                    }
+                    
+                    updatePhotoMosaicGrid(entries, settings, animateNew);
+                    resolve();
+                })
+                .catch(error => {
+                    console.error('Error fetching settings:', error);
+                    // Fallback to just entries without settings
+                    updatePhotoMosaicGrid(entries, null, animateNew);
+                    resolve();
+                });
+        }
     });
 }
 
@@ -516,10 +522,12 @@ function updatePhotoMosaicGrid(entries, settings = null, animateNewest = false) 
     
     // Reposition tiles after update using async positioning
     setTimeout(async () => {
-        await positionTiles(settings);
-        initializeTooltips();
-        
-        // Note: Animation now handled by celebration popup system
+        try {
+            await positionTiles(settings);
+            initializeTooltips();
+        } catch (error) {
+            console.error('Error positioning tiles:', error);
+        }
     }, 50);
     
     // Update counter
@@ -656,10 +664,6 @@ function triggerNewestTileAnimation() {
     }
 }
 
-function testAnimation() {
-    // Test the celebration sequence
-    startCelebration();
-}
 
 function escapeHtml(text) {
     const div = document.createElement('div');
