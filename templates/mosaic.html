@@ -1,96 +1,242 @@
 {% extends "base.html" %}
 
-{% block title %}Celebration Mosaic - View All Celebrations{% endblock %}
+{% block title %}Photo Mosaic - Celebration Display{% endblock %}
 
 {% block content %}
-<div class="mosaic-container" style="background-image: url('{{ url_for('static', filename=logo_filename) }}');">
-    <div class="mosaic-overlay">
-        <div class="container py-5">
-            <div class="text-center mb-4">
-                <h1 class="display-4 text-white mb-3">🎉 Celebration Mosaic</h1>
-                <p class="lead text-white-50">A beautiful collection of festive messages from our community</p>
-                <div class="mb-3">
-                    <button class="btn btn-outline-light" onclick="refreshMosaic()">🔄 Refresh Now</button>
-                    <span class="badge bg-success ms-2">Auto-refreshing every 10 seconds</span>
-                </div>
-                <div class="badge bg-info">{{ entries|length }} celebrations shared</div>
+<div class="photo-mosaic-container">
+    <div class="container-fluid py-3">
+        <div class="text-center mb-3">
+            <h1 class="display-5 text-white mb-2">🎉 Photo Mosaic</h1>
+            <p class="text-white-50">Small celebration tiles recreating the big picture</p>
+            <div class="mb-3">
+                <button class="btn btn-outline-light btn-sm" onclick="refreshMosaic()">🔄 Refresh Now</button>
+                <span class="badge bg-success ms-2">Auto-refreshing every 10 seconds</span>
+                <span class="badge bg-info ms-1">{{ entries|length }} tiles</span>
             </div>
+        </div>
 
-            {% if entries %}
-            <div class="mosaic-grid" id="mosaicGrid">
-                {% for entry in entries %}
-                <div class="mosaic-tile" data-bs-toggle="tooltip" data-bs-title="Added {{ entry.timestamp[:10] }}">
-                    <div class="mosaic-symbol">{{ entry.symbol }}</div>
-                    <div class="mosaic-name">{{ entry.name }}</div>
-                    <div class="mosaic-message">{{ entry.message }}</div>
+        <div class="photo-mosaic-wrapper" id="photoMosaicWrapper">
+            <canvas id="backgroundCanvas" style="position: absolute; z-index: 1;"></canvas>
+            <div id="photoMosaicGrid" class="photo-mosaic-grid">
+                {% if entries %}
+                    {% for entry in entries %}
+                    <div class="photo-tile" data-entry-id="{{ loop.index }}" 
+                         data-bs-toggle="tooltip" data-bs-title="{{ entry.name }}: {{ entry.message }}">
+                        <div class="tile-symbol">{{ entry.symbol }}</div>
+                        <div class="tile-name">{{ entry.name[:8] }}{% if entry.name|length > 8 %}...{% endif %}</div>
+                        <div class="tile-message">{{ entry.message[:20] }}{% if entry.message|length > 20 %}...{% endif %}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="empty-mosaic text-center py-5">
+                    <div class="display-1 mb-3 text-white-50">🎊</div>
+                    <h3 class="text-white">Building photo mosaic...</h3>
+                    <p class="text-white-50">Waiting for celebration tiles to appear</p>
+                    <p class="text-white-50 small">Auto-refreshing every 10 seconds</p>
                 </div>
-                {% endfor %}
+                {% endif %}
             </div>
-            {% else %}
-            <div class="text-center py-5">
-                <div class="display-1 mb-3">🎊</div>
-                <h3 class="text-white">No celebrations yet!</h3>
-                <p class="text-white-50">Waiting for festive messages to appear...</p>
-                <p class="text-white-50 small">This display automatically refreshes every 10 seconds</p>
-            </div>
-            {% endif %}
         </div>
     </div>
 </div>
 
 <script>
-// Initialize tooltips
-const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
-
-// Auto-refresh functionality
+// Photo Mosaic Variables
+let backgroundImage = null;
+let backgroundImageData = null;
+let tileSize = 40;
+let mosaicWidth = 0;
+let mosaicHeight = 0;
+let gridCols = 0;
+let gridRows = 0;
 let refreshInterval;
+
+// Initialize photo mosaic
+document.addEventListener('DOMContentLoaded', function() {
+    initializePhotoMosaic();
+    initializeTooltips();
+});
+
+function initializeTooltips() {
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+}
+
+function initializePhotoMosaic() {
+    const logoUrl = '{{ url_for("static", filename=logo_filename) }}';
+    loadBackgroundImage(logoUrl);
+    setupMosaicGrid();
+    
+    // Start auto-refresh
+    refreshInterval = setInterval(refreshMosaic, 10000);
+}
+
+function loadBackgroundImage(url) {
+    backgroundImage = new Image();
+    backgroundImage.crossOrigin = 'anonymous';
+    backgroundImage.onload = function() {
+        analyzeBackgroundImage();
+        positionTiles();
+    };
+    backgroundImage.onerror = function() {
+        console.log('Could not load background image, using default positioning');
+        setupDefaultGrid();
+    };
+    backgroundImage.src = url;
+}
+
+function analyzeBackgroundImage() {
+    const canvas = document.getElementById('backgroundCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Set canvas size based on viewport
+    const wrapper = document.getElementById('photoMosaicWrapper');
+    mosaicWidth = Math.min(wrapper.clientWidth, 1200);
+    mosaicHeight = Math.min(mosaicWidth * 0.75, 800);
+    
+    canvas.width = mosaicWidth;
+    canvas.height = mosaicHeight;
+    canvas.style.width = mosaicWidth + 'px';
+    canvas.style.height = mosaicHeight + 'px';
+    
+    // Draw background image at low opacity for reference
+    ctx.globalAlpha = 0.2;
+    ctx.drawImage(backgroundImage, 0, 0, mosaicWidth, mosaicHeight);
+    ctx.globalAlpha = 1.0;
+    
+    // Get image data for analysis
+    backgroundImageData = ctx.getImageData(0, 0, mosaicWidth, mosaicHeight);
+    
+    // Calculate grid dimensions
+    gridCols = Math.floor(mosaicWidth / tileSize);
+    gridRows = Math.floor(mosaicHeight / tileSize);
+}
+
+function setupMosaicGrid() {
+    const wrapper = document.getElementById('photoMosaicWrapper');
+    wrapper.style.position = 'relative';
+    wrapper.style.width = '100%';
+    wrapper.style.maxWidth = '1200px';
+    wrapper.style.margin = '0 auto';
+}
+
+function setupDefaultGrid() {
+    // Fallback when background image fails to load
+    const wrapper = document.getElementById('photoMosaicWrapper');
+    mosaicWidth = Math.min(wrapper.clientWidth, 1200);
+    mosaicHeight = Math.min(mosaicWidth * 0.75, 800);
+    gridCols = Math.floor(mosaicWidth / tileSize);
+    gridRows = Math.floor(mosaicHeight / tileSize);
+    positionTiles();
+}
+
+function getPixelBrightness(x, y) {
+    if (!backgroundImageData) return 128;
+    
+    const index = (y * backgroundImageData.width + x) * 4;
+    const r = backgroundImageData.data[index];
+    const g = backgroundImageData.data[index + 1];
+    const b = backgroundImageData.data[index + 2];
+    
+    // Calculate brightness using standard formula
+    return (r * 0.299 + g * 0.587 + b * 0.114);
+}
+
+function positionTiles() {
+    const tiles = document.querySelectorAll('.photo-tile');
+    const grid = document.getElementById('photoMosaicGrid');
+    
+    if (!grid || tiles.length === 0) return;
+    
+    grid.style.position = 'relative';
+    grid.style.width = mosaicWidth + 'px';
+    grid.style.height = mosaicHeight + 'px';
+    
+    // Create an array of grid positions
+    const positions = [];
+    for (let row = 0; row < gridRows; row++) {
+        for (let col = 0; col < gridCols; col++) {
+            const x = col * tileSize;
+            const y = row * tileSize;
+            const centerX = x + tileSize / 2;
+            const centerY = y + tileSize / 2;
+            const brightness = getPixelBrightness(centerX, centerY);
+            
+            positions.push({ x, y, brightness, used: false });
+        }
+    }
+    
+    // Sort positions by brightness (darker areas first for better contrast)
+    positions.sort((a, b) => a.brightness - b.brightness);
+    
+    // Position tiles
+    tiles.forEach((tile, index) => {
+        if (index < positions.length) {
+            const pos = positions[index];
+            tile.style.position = 'absolute';
+            tile.style.left = pos.x + 'px';
+            tile.style.top = pos.y + 'px';
+            tile.style.width = tileSize + 'px';
+            tile.style.height = tileSize + 'px';
+            
+            // Adjust tile opacity based on background brightness
+            const opacity = pos.brightness < 128 ? 0.9 : 0.8;
+            tile.style.backgroundColor = `rgba(255, 255, 255, ${opacity})`;
+        }
+    });
+}
 
 function refreshMosaic() {
     fetch('/api/entries')
         .then(response => response.json())
         .then(data => {
-            updateMosaicGrid(data);
+            updatePhotoMosaicGrid(data);
         })
         .catch(error => {
             console.error('Error fetching entries:', error);
         });
 }
 
-function updateMosaicGrid(entries) {
-    const grid = document.getElementById('mosaicGrid');
+function updatePhotoMosaicGrid(entries) {
+    const grid = document.getElementById('photoMosaicGrid');
     if (!grid) return;
     
-    grid.innerHTML = '';
-    
     if (entries.length === 0) {
-        window.location.reload(); // Reload to show empty state
+        window.location.reload();
         return;
     }
     
-    entries.forEach(entry => {
+    grid.innerHTML = '';
+    
+    entries.forEach((entry, index) => {
         const tile = document.createElement('div');
-        tile.className = 'mosaic-tile';
+        tile.className = 'photo-tile';
+        tile.setAttribute('data-entry-id', index + 1);
         tile.setAttribute('data-bs-toggle', 'tooltip');
-        tile.setAttribute('data-bs-title', `Added ${entry.timestamp.substring(0, 10)}`);
+        tile.setAttribute('data-bs-title', `${escapeHtml(entry.name)}: ${escapeHtml(entry.message)}`);
+        
+        const name = entry.name.length > 8 ? entry.name.substring(0, 8) + '...' : entry.name;
+        const message = entry.message.length > 20 ? entry.message.substring(0, 20) + '...' : entry.message;
         
         tile.innerHTML = `
-            <div class="mosaic-symbol">${entry.symbol}</div>
-            <div class="mosaic-name">${escapeHtml(entry.name)}</div>
-            <div class="mosaic-message">${escapeHtml(entry.message)}</div>
+            <div class="tile-symbol">${entry.symbol}</div>
+            <div class="tile-name">${escapeHtml(name)}</div>
+            <div class="tile-message">${escapeHtml(message)}</div>
         `;
         
         grid.appendChild(tile);
     });
     
-    // Reinitialize tooltips
-    const newTooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    [...newTooltips].map(el => new bootstrap.Tooltip(el));
+    // Reposition tiles after update
+    setTimeout(() => {
+        positionTiles();
+        initializeTooltips();
+    }, 100);
     
     // Update counter
-    const badge = document.querySelector('.badge');
+    const badge = document.querySelector('.badge.bg-info');
     if (badge) {
-        badge.textContent = `${entries.length} celebrations shared`;
+        badge.textContent = `${entries.length} tiles`;
     }
 }
 
@@ -100,8 +246,15 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Start auto-refresh every 10 seconds for continuous updates
-refreshInterval = setInterval(refreshMosaic, 10000);
+// Handle window resize
+window.addEventListener('resize', function() {
+    setTimeout(() => {
+        if (backgroundImage && backgroundImage.complete) {
+            analyzeBackgroundImage();
+            positionTiles();
+        }
+    }, 250);
+});
 
 // Clean up on page unload
 window.addEventListener('beforeunload', () => {
