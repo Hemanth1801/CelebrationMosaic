@@ -42,9 +42,9 @@ def load_admin_settings():
         "grid_rows": 10,
         "grid_cols": 12,
         "symbols": [
-            {"emoji": "🪔", "label": "Diya"},
-            {"emoji": "🎆", "label": "Cracker"},
-            {"emoji": "🚀", "label": "Rocket"}
+            {"filename": "diya.png", "label": "Diya"},
+            {"filename": "cracker.png", "label": "Cracker"},
+            {"filename": "rocket.png", "label": "Rocket"}
         ]
     }
     try:
