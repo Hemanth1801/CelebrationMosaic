@@ -63,12 +63,27 @@ function initializeTooltips() {
 }
 
 function initializePhotoMosaic() {
-    const logoUrl = '{{ url_for("static", filename=logo_filename) }}';
-    loadBackgroundImage(logoUrl);
+    loadCurrentLogo();
     setupMosaicGrid();
     
     // Start auto-refresh
     refreshInterval = setInterval(refreshMosaic, 10000);
+}
+
+function loadCurrentLogo() {
+    // Fetch current admin settings to get the latest logo
+    fetch('/api/admin-settings')
+        .then(response => response.json())
+        .then(settings => {
+            const logoUrl = `/static/${settings.logo_filename}?t=${Date.now()}`;
+            loadBackgroundImage(logoUrl);
+        })
+        .catch(error => {
+            console.error('Error fetching admin settings:', error);
+            // Fallback to template value
+            const logoUrl = '{{ url_for("static", filename=logo_filename) }}?t=' + Date.now();
+            loadBackgroundImage(logoUrl);
+        });
 }
 
 function loadBackgroundImage(url) {
@@ -227,14 +242,31 @@ function positionTiles() {
 }
 
 function refreshMosaic() {
-    fetch('/api/entries')
-        .then(response => response.json())
-        .then(data => {
-            updatePhotoMosaicGrid(data);
-        })
-        .catch(error => {
-            console.error('Error fetching entries:', error);
-        });
+    // Refresh both entries and logo settings
+    Promise.all([
+        fetch('/api/entries').then(response => response.json()),
+        fetch('/api/admin-settings').then(response => response.json())
+    ])
+    .then(([entries, settings]) => {
+        // Check if logo has changed
+        const currentLogoUrl = backgroundImage ? backgroundImage.src : '';
+        const newLogoUrl = `/static/${settings.logo_filename}?t=${Date.now()}`;
+        
+        if (!currentLogoUrl.includes(settings.logo_filename)) {
+            // Logo changed, reload it
+            loadBackgroundImage(newLogoUrl);
+        }
+        
+        updatePhotoMosaicGrid(entries);
+    })
+    .catch(error => {
+        console.error('Error refreshing mosaic:', error);
+        // Fallback to just entries
+        fetch('/api/entries')
+            .then(response => response.json())
+            .then(data => updatePhotoMosaicGrid(data))
+            .catch(err => console.error('Error fetching entries:', err));
+    });
 }
 
 function updatePhotoMosaicGrid(entries) {

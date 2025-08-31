@@ -280,6 +280,16 @@ def api_entries():
         logging.error(f"Error in api_entries: {e}")
         return jsonify([])
 
+@app.route('/api/admin-settings')
+def api_admin_settings():
+    """API endpoint to get current admin settings (for logo updates)"""
+    try:
+        settings = load_admin_settings()
+        return jsonify(settings)
+    except Exception as e:
+        logging.error(f"Error in api_admin_settings: {e}")
+        return jsonify({"logo_filename": "logo.png", "max_entries": 50, "symbols": []})
+
 if __name__ == '__main__':
     # Ensure static directory exists
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
