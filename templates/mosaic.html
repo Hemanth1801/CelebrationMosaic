@@ -16,7 +16,7 @@
         </div>
 
         <div class="photo-mosaic-wrapper" id="photoMosaicWrapper">
-            <canvas id="backgroundCanvas" style="position: absolute; z-index: 1;"></canvas>
+            <canvas id="analysisCanvas" style="display: none;"></canvas>
             <div id="photoMosaicGrid" class="photo-mosaic-grid">
                 {% if entries %}
                     {% for entry in entries %}
@@ -86,30 +86,30 @@ function loadBackgroundImage(url) {
 }
 
 function analyzeBackgroundImage() {
-    const canvas = document.getElementById('backgroundCanvas');
+    const canvas = document.getElementById('analysisCanvas');
     const ctx = canvas.getContext('2d');
     
     // Set canvas size based on viewport
     const wrapper = document.getElementById('photoMosaicWrapper');
-    mosaicWidth = Math.min(wrapper.clientWidth, 1200);
-    mosaicHeight = Math.min(mosaicWidth * 0.75, 800);
+    mosaicWidth = Math.min(wrapper.clientWidth, 1000);
+    mosaicHeight = Math.min(mosaicWidth * 0.6, 600);
+    
+    // Calculate grid dimensions first
+    gridCols = Math.floor(mosaicWidth / tileSize);
+    gridRows = Math.floor(mosaicHeight / tileSize);
+    
+    // Adjust mosaic size to fit exact grid
+    mosaicWidth = gridCols * tileSize;
+    mosaicHeight = gridRows * tileSize;
     
     canvas.width = mosaicWidth;
     canvas.height = mosaicHeight;
-    canvas.style.width = mosaicWidth + 'px';
-    canvas.style.height = mosaicHeight + 'px';
     
-    // Draw background image at low opacity for reference
-    ctx.globalAlpha = 0.2;
+    // Draw background image for analysis only
     ctx.drawImage(backgroundImage, 0, 0, mosaicWidth, mosaicHeight);
-    ctx.globalAlpha = 1.0;
     
-    // Get image data for analysis
+    // Get image data for pixel analysis
     backgroundImageData = ctx.getImageData(0, 0, mosaicWidth, mosaicHeight);
-    
-    // Calculate grid dimensions
-    gridCols = Math.floor(mosaicWidth / tileSize);
-    gridRows = Math.floor(mosaicHeight / tileSize);
 }
 
 function setupMosaicGrid() {
@@ -130,8 +130,8 @@ function setupDefaultGrid() {
     positionTiles();
 }
 
-function getPixelBrightness(x, y) {
-    if (!backgroundImageData) return 128;
+function getPixelData(x, y) {
+    if (!backgroundImageData) return { r: 128, g: 128, b: 128, brightness: 128 };
     
     const index = (y * backgroundImageData.width + x) * 4;
     const r = backgroundImageData.data[index];
@@ -139,7 +139,9 @@ function getPixelBrightness(x, y) {
     const b = backgroundImageData.data[index + 2];
     
     // Calculate brightness using standard formula
-    return (r * 0.299 + g * 0.587 + b * 0.114);
+    const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
+    
+    return { r, g, b, brightness };
 }
 
 function positionTiles() {
@@ -151,8 +153,10 @@ function positionTiles() {
     grid.style.position = 'relative';
     grid.style.width = mosaicWidth + 'px';
     grid.style.height = mosaicHeight + 'px';
+    grid.style.margin = '0 auto';
+    grid.style.border = '2px solid rgba(255,255,255,0.3)';
     
-    // Create an array of grid positions
+    // Create grid positions that match the background image
     const positions = [];
     for (let row = 0; row < gridRows; row++) {
         for (let col = 0; col < gridCols; col++) {
@@ -160,16 +164,18 @@ function positionTiles() {
             const y = row * tileSize;
             const centerX = x + tileSize / 2;
             const centerY = y + tileSize / 2;
-            const brightness = getPixelBrightness(centerX, centerY);
+            const pixelData = getPixelData(centerX, centerY);
             
-            positions.push({ x, y, brightness, used: false });
+            positions.push({ 
+                x, y, 
+                color: pixelData,
+                row, col,
+                used: false 
+            });
         }
     }
     
-    // Sort positions by brightness (darker areas first for better contrast)
-    positions.sort((a, b) => a.brightness - b.brightness);
-    
-    // Position tiles
+    // Fill grid positions sequentially to maintain image structure
     tiles.forEach((tile, index) => {
         if (index < positions.length) {
             const pos = positions[index];
@@ -179,11 +185,45 @@ function positionTiles() {
             tile.style.width = tileSize + 'px';
             tile.style.height = tileSize + 'px';
             
-            // Adjust tile opacity based on background brightness
-            const opacity = pos.brightness < 128 ? 0.9 : 0.8;
-            tile.style.backgroundColor = `rgba(255, 255, 255, ${opacity})`;
+            // Apply color tinting to match background image
+            const { r, g, b, brightness } = pos.color;
+            const alpha = brightness < 100 ? 0.7 : brightness > 200 ? 0.95 : 0.85;
+            
+            // Create color overlay effect
+            tile.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.3)`;
+            tile.style.borderColor = `rgba(${r}, ${g}, ${b}, 0.5)`;
+            
+            // Adjust text color for contrast
+            if (brightness < 128) {
+                tile.style.color = '#fff';
+                tile.style.textShadow = '1px 1px 2px rgba(0,0,0,0.8)';
+            } else {
+                tile.style.color = '#000';
+                tile.style.textShadow = '1px 1px 2px rgba(255,255,255,0.8)';
+            }
         }
     });
+    
+    // Fill empty positions with placeholder tiles if we have fewer submissions
+    const totalPositions = gridRows * gridCols;
+    if (tiles.length < totalPositions) {
+        for (let i = tiles.length; i < totalPositions; i++) {
+            const pos = positions[i];
+            const emptyTile = document.createElement('div');
+            emptyTile.className = 'photo-tile empty-tile';
+            emptyTile.style.position = 'absolute';
+            emptyTile.style.left = pos.x + 'px';
+            emptyTile.style.top = pos.y + 'px';
+            emptyTile.style.width = tileSize + 'px';
+            emptyTile.style.height = tileSize + 'px';
+            
+            const { r, g, b } = pos.color;
+            emptyTile.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.6)`;
+            emptyTile.style.border = `1px solid rgba(${r}, ${g}, ${b}, 0.8)`;
+            
+            grid.appendChild(emptyTile);
+        }
+    }
 }
 
 function refreshMosaic() {
@@ -206,7 +246,9 @@ function updatePhotoMosaicGrid(entries) {
         return;
     }
     
-    grid.innerHTML = '';
+    // Clear existing tiles (keep the grid structure)
+    const existingTiles = grid.querySelectorAll('.photo-tile, .empty-tile');
+    existingTiles.forEach(tile => tile.remove());
     
     entries.forEach((entry, index) => {
         const tile = document.createElement('div');
@@ -215,8 +257,8 @@ function updatePhotoMosaicGrid(entries) {
         tile.setAttribute('data-bs-toggle', 'tooltip');
         tile.setAttribute('data-bs-title', `${escapeHtml(entry.name)}: ${escapeHtml(entry.message)}`);
         
-        const name = entry.name.length > 8 ? entry.name.substring(0, 8) + '...' : entry.name;
-        const message = entry.message.length > 20 ? entry.message.substring(0, 20) + '...' : entry.message;
+        const name = entry.name.length > 6 ? entry.name.substring(0, 6) + '...' : entry.name;
+        const message = entry.message.length > 15 ? entry.message.substring(0, 15) + '...' : entry.message;
         
         tile.innerHTML = `
             <div class="tile-symbol">${entry.symbol}</div>

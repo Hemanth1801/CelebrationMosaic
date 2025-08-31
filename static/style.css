@@ -21,77 +21,91 @@
     z-index: 2;
 }
 
-/* Individual photo tiles */
+/* Individual photo tiles for mosaic reconstruction */
 .photo-tile {
     position: absolute;
-    background: rgba(255, 255, 255, 0.85);
-    border-radius: 4px;
-    padding: 2px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 1px;
+    padding: 1px;
     text-align: center;
-    transition: all 0.3s ease;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+    border: 0.5px solid rgba(0, 0, 0, 0.1);
     color: #333;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    font-size: 8px;
-    line-height: 1.1;
+    font-size: 7px;
+    line-height: 1;
     overflow: hidden;
     cursor: pointer;
+    box-sizing: border-box;
 }
 
 .photo-tile:hover {
-    transform: scale(1.2);
-    z-index: 10;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    border-color: var(--bs-primary);
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 6px;
+    transform: scale(2);
+    z-index: 1000;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+    border: 2px solid var(--bs-primary);
+    background: rgba(255, 255, 255, 0.98) !important;
+    border-radius: 8px;
     padding: 4px;
-    font-size: 10px;
+    font-size: 11px;
+    backdrop-filter: blur(2px);
+}
+
+/* Empty tiles to fill grid */
+.empty-tile {
+    border-radius: 1px;
+    opacity: 0.8;
 }
 
 .tile-symbol {
-    font-size: 14px;
+    font-size: 12px;
     line-height: 1;
-    margin-bottom: 1px;
+    margin: 0;
+    padding: 0;
 }
 
 .photo-tile:hover .tile-symbol {
-    font-size: 18px;
+    font-size: 20px;
     margin-bottom: 2px;
 }
 
 .tile-name {
     font-weight: bold;
-    font-size: 7px;
-    margin-bottom: 1px;
-    color: var(--bs-primary);
+    font-size: 5px;
+    margin: 0;
+    padding: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    opacity: 0.8;
 }
 
 .photo-tile:hover .tile-name {
-    font-size: 9px;
-    margin-bottom: 2px;
+    font-size: 10px;
+    margin-bottom: 1px;
     white-space: normal;
+    opacity: 1;
 }
 
 .tile-message {
-    font-size: 6px;
-    line-height: 1.2;
-    color: #666;
+    font-size: 4px;
+    line-height: 1;
+    margin: 0;
+    padding: 0;
     overflow: hidden;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
+    opacity: 0.6;
 }
 
 .photo-tile:hover .tile-message {
-    font-size: 8px;
+    font-size: 9px;
+    line-height: 1.2;
     -webkit-line-clamp: 3;
+    opacity: 1;
 }
 
 /* Empty mosaic state */
