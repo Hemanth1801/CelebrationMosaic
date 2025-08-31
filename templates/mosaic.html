@@ -9,7 +9,9 @@
         <div class="text-center mb-3">
             <a href="{{ url_for('index') }}" class="btn btn-primary me-2">🎊 Add Another Entry</a>
             <a href="{{ url_for('admin') }}" class="btn btn-outline-secondary me-2">⚙️ Admin</a>
-            <button onclick="startCelebration()" class="btn btn-outline-success btn-sm">🎉 Test Celebration</button>
+            <button onclick="startCelebration('confetti')" class="btn btn-outline-success btn-sm me-1">🎊 Confetti</button>
+            <button onclick="startCelebration('diwali')" class="btn btn-outline-warning btn-sm me-1">🪔 Diwali</button>
+            <button onclick="startCelebration('fireworks')" class="btn btn-outline-info btn-sm">🎆 Fireworks</button>
         </div>
         
         <div class="photo-mosaic-wrapper" id="photoMosaicWrapper">
@@ -338,8 +340,11 @@ function checkForNewEntries() {
                 // Trigger celebration if there's a new entry
                 if (wasNewEntry) {
                     console.log('🎉 New entry detected! Starting celebration...');
+                    // Randomly choose celebration type for automatic celebrations
+                    const celebrationTypes = ['confetti', 'diwali', 'fireworks'];
+                    const randomType = celebrationTypes[Math.floor(Math.random() * celebrationTypes.length)];
                     setTimeout(() => {
-                        startCelebration();
+                        startCelebration(randomType);
                     }, 1000); // Delay to allow grid to render first
                 }
             }
@@ -538,11 +543,21 @@ function updatePhotoMosaicGrid(entries, settings = null, animateNewest = false) 
     }
 }
 
-function startCelebration() {
-    console.log('🎊 Starting celebration!');
+function startCelebration(effectType = 'confetti') {
+    console.log('🎊 Starting celebration with effect:', effectType);
     
-    // Create confetti
-    createConfetti();
+    // Create effect based on type
+    switch(effectType) {
+        case 'diwali':
+            createDiwaliCrackers();
+            break;
+        case 'fireworks':
+            createFireworks();
+            break;
+        default:
+            createConfetti();
+            break;
+    }
     
     // Get the newest entry to display in popup
     fetch('/api/entries')
@@ -584,6 +599,77 @@ function createConfetti() {
     console.log('Confetti created!');
 }
 
+function createDiwaliCrackers() {
+    console.log('Creating Diwali crackers...');
+    const crackerColors = ['#ffcc00', '#ff6600', '#ff9900', '#ffdd44', '#ff4400'];
+    
+    for (let i = 0; i < 15; i++) {
+        const cracker = document.createElement('div');
+        cracker.className = 'diwali-cracker';
+        cracker.style.background = `radial-gradient(circle, ${crackerColors[Math.floor(Math.random() * crackerColors.length)]}, #ff3300)`;
+        cracker.style.left = Math.random() * 100 + 'vw';
+        cracker.style.top = Math.random() * 100 + 'vh';
+        cracker.style.animationDelay = Math.random() * 2 + 's';
+        
+        document.body.appendChild(cracker);
+        
+        // Remove cracker after animation
+        setTimeout(() => {
+            if (cracker.parentNode) {
+                cracker.remove();
+            }
+        }, 3500);
+    }
+    console.log('Diwali crackers created!');
+}
+
+function createFireworks() {
+    console.log('Creating fireworks...');
+    const fireworkColors = ['#ff0040', '#00ff80', '#4080ff', '#ffff00', '#ff8000', '#8000ff'];
+    
+    for (let i = 0; i < 5; i++) {
+        setTimeout(() => {
+            const centerX = Math.random() * 80 + 10; // 10-90% of screen width
+            const centerY = Math.random() * 60 + 20; // 20-80% of screen height
+            const color = fireworkColors[Math.floor(Math.random() * fireworkColors.length)];
+            
+            // Create multiple sparks for each firework
+            for (let j = 0; j < 12; j++) {
+                const spark = document.createElement('div');
+                spark.className = 'firework';
+                spark.style.backgroundColor = color;
+                spark.style.boxShadow = `0 0 10px ${color}`;
+                spark.style.left = centerX + '%';
+                spark.style.top = centerY + '%';
+                
+                // Random direction for each spark
+                const angle = (j * 30) + Math.random() * 15; // Spread sparks in circle
+                const distance = 50 + Math.random() * 100; // Random distance
+                const radians = (angle * Math.PI) / 180;
+                const moveX = Math.cos(radians) * distance;
+                const moveY = Math.sin(radians) * distance;
+                
+                spark.style.setProperty('--move-x', moveX + 'px');
+                spark.style.setProperty('--move-y', moveY + 'px');
+                
+                // Add custom animation for movement
+                spark.style.animation = `firework-burst 1.5s ease-out forwards`;
+                spark.style.transform = `translate(${moveX}px, ${moveY}px)`;
+                
+                document.body.appendChild(spark);
+                
+                // Remove spark after animation
+                setTimeout(() => {
+                    if (spark.parentNode) {
+                        spark.remove();
+                    }
+                }, 1500);
+            }
+        }, i * 500); // Stagger fireworks
+    }
+    console.log('Fireworks created!');
+}
+
 function showCelebrationPopup(entry) {
     console.log('Showing celebration popup for:', entry.name);
     
@@ -617,7 +703,7 @@ function showCelebrationPopup(entry) {
     setTimeout(() => {
         console.log('Moving popup to grid...');
         movePopupToGrid(popupTile, overlay, entry);
-    }, 2000);
+    }, 2500);
 }
 
 function movePopupToGrid(popupTile, overlay, entry) {
