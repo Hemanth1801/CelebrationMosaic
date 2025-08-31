@@ -149,13 +149,28 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-body text-center">
-                    <h5>Quick Links</h5>
-                    <a href="{{ url_for('index') }}" class="btn btn-outline-primary me-2">📝 Submit Form</a>
-                    <a href="{{ url_for('mosaic') }}" class="btn btn-outline-primary me-2">🎨 View Mosaic</a>
-                    <button class="btn btn-outline-secondary" onclick="window.location.reload()">🔄 Refresh</button>
+                    <h5>Admin Controls</h5>
+                    <button class="btn btn-outline-secondary" onclick="window.location.reload()">🔄 Refresh Admin Panel</button>
+                    <button class="btn btn-outline-info ms-2" onclick="showRouteInfo()">ℹ️ Route Information</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+function showRouteInfo() {
+    const currentUrl = window.location.href;
+    const baseUrl = currentUrl.replace('/admin', '');
+    
+    alert(`Route Information:
+    
+📝 Submission Form: ${baseUrl}/
+🎨 Mosaic Display: ${baseUrl}/mosaic  
+⚙️ Admin Panel: ${baseUrl}/admin
+
+Each route is designed to run on separate devices.
+The mosaic automatically refreshes every 10 seconds.`);
+}
+</script>
 {% endblock %}

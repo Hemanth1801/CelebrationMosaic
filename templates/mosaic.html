@@ -10,8 +10,8 @@
                 <h1 class="display-4 text-white mb-3">🎉 Celebration Mosaic</h1>
                 <p class="lead text-white-50">A beautiful collection of festive messages from our community</p>
                 <div class="mb-3">
-                    <a href="{{ url_for('index') }}" class="btn btn-primary me-2">➕ Add Your Message</a>
-                    <button class="btn btn-outline-light" onclick="refreshMosaic()">🔄 Refresh</button>
+                    <button class="btn btn-outline-light" onclick="refreshMosaic()">🔄 Refresh Now</button>
+                    <span class="badge bg-success ms-2">Auto-refreshing every 10 seconds</span>
                 </div>
                 <div class="badge bg-info">{{ entries|length }} celebrations shared</div>
             </div>
@@ -30,8 +30,8 @@
             <div class="text-center py-5">
                 <div class="display-1 mb-3">🎊</div>
                 <h3 class="text-white">No celebrations yet!</h3>
-                <p class="text-white-50">Be the first to share your festive message.</p>
-                <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">🎉 Start Celebrating</a>
+                <p class="text-white-50">Waiting for festive messages to appear...</p>
+                <p class="text-white-50 small">This display automatically refreshes every 10 seconds</p>
             </div>
             {% endif %}
         </div>
@@ -100,8 +100,8 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Start auto-refresh every 30 seconds
-refreshInterval = setInterval(refreshMosaic, 30000);
+// Start auto-refresh every 10 seconds for continuous updates
+refreshInterval = setInterval(refreshMosaic, 10000);
 
 // Clean up on page unload
 window.addEventListener('beforeunload', () => {

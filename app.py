@@ -156,7 +156,7 @@ def upload_logo():
             flash('No file selected!', 'error')
             return redirect(url_for('admin'))
         
-        if file and allowed_file(file.filename):
+        if file and file.filename and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             # Add timestamp to avoid conflicts
             name, ext = os.path.splitext(filename)
