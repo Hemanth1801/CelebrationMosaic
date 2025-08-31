@@ -1,0 +1,192 @@
+/* Custom styles for the celebration mosaic */
+
+/* Mosaic container with background image */
+.mosaic-container {
+    min-height: 100vh;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+}
+
+.mosaic-overlay {
+    background: rgba(0, 0, 0, 0.7);
+    min-height: 100vh;
+    backdrop-filter: blur(2px);
+}
+
+/* Mosaic grid layout */
+.mosaic-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    padding: 2rem 0;
+}
+
+/* Individual mosaic tiles */
+.mosaic-tile {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    color: #333;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.mosaic-tile:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    border-color: var(--bs-primary);
+}
+
+.mosaic-symbol {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    line-height: 1;
+}
+
+.mosaic-name {
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: var(--bs-primary);
+}
+
+.mosaic-message {
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: #666;
+    overflow-wrap: break-word;
+}
+
+/* Form enhancements */
+.btn-check:checked + .btn {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    color: white;
+}
+
+.btn-check:checked + .btn .fs-2 {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Admin panel styling */
+.card {
+    border: none;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background: var(--bs-primary);
+    color: white;
+    border-bottom: none;
+}
+
+/* Navigation styling */
+.navbar {
+    background: var(--bs-primary) !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .mosaic-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        padding: 1rem 0;
+    }
+    
+    .mosaic-tile {
+        padding: 1rem;
+        min-height: 150px;
+    }
+    
+    .mosaic-symbol {
+        font-size: 2rem;
+    }
+    
+    .container {
+        padding: 0 1rem;
+    }
+}
+
+/* Empty state styling */
+.display-1 {
+    opacity: 0.7;
+}
+
+/* Footer styling */
+footer {
+    background: var(--bs-dark);
+    color: var(--bs-gray-400);
+}
+
+/* Loading animation for tiles */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.mosaic-tile {
+    animation: fadeInUp 0.5s ease forwards;
+}
+
+/* Character counter styling */
+.form-text.text-warning {
+    font-weight: bold;
+}
+
+/* Admin symbol cards */
+.card .card-body.text-center {
+    transition: all 0.3s ease;
+}
+
+.card .card-body.text-center:hover {
+    background: var(--bs-light);
+}
+
+/* File upload styling */
+.form-control[type="file"] {
+    padding: 0.5rem;
+}
+
+/* Badge styling */
+.badge {
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+}
+
+/* Button enhancements */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Alert styling */
+.alert {
+    border-radius: 8px;
+    border: none;
+}

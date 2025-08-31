@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - Celebration Mosaic{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">⚙️ Admin Panel</h1>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Logo Management -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">🖼️ Logo Management</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Current Logo:</strong> {{ settings.logo_filename }}
+                    </div>
+                    <div class="mb-3">
+                        <img src="{{ url_for('static', filename=settings.logo_filename) }}" 
+                             alt="Current Logo" class="img-thumbnail" style="max-width: 200px; max-height: 150px;">
+                    </div>
+                    <form method="POST" action="{{ url_for('upload_logo') }}" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="logo" class="form-label">Upload New Logo</label>
+                            <input type="file" class="form-control" id="logo" name="logo" 
+                                   accept=".png,.jpg,.jpeg,.gif,.svg" required>
+                            <div class="form-text">Supported formats: PNG, JPG, JPEG, GIF, SVG</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">📤 Upload Logo</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">⚙️ Display Settings</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('update_settings') }}">
+                        <div class="mb-3">
+                            <label for="max_entries" class="form-label">Maximum Entries to Display</label>
+                            <input type="number" class="form-control" id="max_entries" name="max_entries" 
+                                   value="{{ settings.max_entries }}" min="1" max="1000">
+                            <div class="form-text">Oldest entries will be automatically removed</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Current Entry Count:</strong> 
+                            <span class="badge bg-info">{{ entry_count }}</span>
+                        </div>
+                        <button type="submit" class="btn btn-primary">💾 Save Settings</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Symbol Management -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">🎭 Celebratory Symbols</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5>Current Symbols</h5>
+                            <div class="row g-2 mb-4">
+                                {% for symbol in settings.symbols %}
+                                <div class="col-auto">
+                                    <div class="card">
+                                        <div class="card-body text-center p-3">
+                                            <div class="fs-2 mb-2">{{ symbol.emoji }}</div>
+                                            <div class="small">{{ symbol.label }}</div>
+                                            <form method="POST" action="{{ url_for('remove_symbol') }}" class="mt-2">
+                                                <input type="hidden" name="emoji" value="{{ symbol.emoji }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                        onclick="return confirm('Remove this symbol?')">
+                                                    🗑️ Remove
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <h5>Add New Symbol</h5>
+                            <form method="POST" action="{{ url_for('add_symbol') }}">
+                                <div class="mb-3">
+                                    <label for="emoji" class="form-label">Emoji</label>
+                                    <input type="text" class="form-control" id="emoji" name="emoji" 
+                                           placeholder="🎉" maxlength="10" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="label" class="form-label">Label</label>
+                                    <input type="text" class="form-control" id="label" name="label" 
+                                           placeholder="Party" maxlength="50" required>
+                                </div>
+                                <button type="submit" class="btn btn-success">➕ Add Symbol</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Entry Management -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">📝 Entry Management</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <p class="mb-2">
+                                <strong>Total Entries:</strong> 
+                                <span class="badge bg-info fs-6">{{ entry_count }}</span>
+                            </p>
+                            <p class="mb-0 text-muted">
+                                Manage all user submissions. Use with caution as this action cannot be undone.
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <form method="POST" action="{{ url_for('clear_entries') }}" class="d-inline">
+                                <button type="submit" class="btn btn-danger"
+                                        onclick="return confirm('Are you sure you want to clear ALL entries? This cannot be undone!')">
+                                    🗑️ Clear All Entries
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5>Quick Links</h5>
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-primary me-2">📝 Submit Form</a>
+                    <a href="{{ url_for('mosaic') }}" class="btn btn-outline-primary me-2">🎨 View Mosaic</a>
+                    <button class="btn btn-outline-secondary" onclick="window.location.reload()">🔄 Refresh</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

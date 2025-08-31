@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Celebration Mosaic - View All Celebrations{% endblock %}
+
+{% block content %}
+<div class="mosaic-container" style="background-image: url('{{ url_for('static', filename=logo_filename) }}');">
+    <div class="mosaic-overlay">
+        <div class="container py-5">
+            <div class="text-center mb-4">
+                <h1 class="display-4 text-white mb-3">🎉 Celebration Mosaic</h1>
+                <p class="lead text-white-50">A beautiful collection of festive messages from our community</p>
+                <div class="mb-3">
+                    <a href="{{ url_for('index') }}" class="btn btn-primary me-2">➕ Add Your Message</a>
+                    <button class="btn btn-outline-light" onclick="refreshMosaic()">🔄 Refresh</button>
+                </div>
+                <div class="badge bg-info">{{ entries|length }} celebrations shared</div>
+            </div>
+
+            {% if entries %}
+            <div class="mosaic-grid" id="mosaicGrid">
+                {% for entry in entries %}
+                <div class="mosaic-tile" data-bs-toggle="tooltip" data-bs-title="Added {{ entry.timestamp[:10] }}">
+                    <div class="mosaic-symbol">{{ entry.symbol }}</div>
+                    <div class="mosaic-name">{{ entry.name }}</div>
+                    <div class="mosaic-message">{{ entry.message }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="display-1 mb-3">🎊</div>
+                <h3 class="text-white">No celebrations yet!</h3>
+                <p class="text-white-50">Be the first to share your festive message.</p>
+                <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">🎉 Start Celebrating</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize tooltips
+const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+
+// Auto-refresh functionality
+let refreshInterval;
+
+function refreshMosaic() {
+    fetch('/api/entries')
+        .then(response => response.json())
+        .then(data => {
+            updateMosaicGrid(data);
+        })
+        .catch(error => {
+            console.error('Error fetching entries:', error);
+        });
+}
+
+function updateMosaicGrid(entries) {
+    const grid = document.getElementById('mosaicGrid');
+    if (!grid) return;
+    
+    grid.innerHTML = '';
+    
+    if (entries.length === 0) {
+        window.location.reload(); // Reload to show empty state
+        return;
+    }
+    
+    entries.forEach(entry => {
+        const tile = document.createElement('div');
+        tile.className = 'mosaic-tile';
+        tile.setAttribute('data-bs-toggle', 'tooltip');
+        tile.setAttribute('data-bs-title', `Added ${entry.timestamp.substring(0, 10)}`);
+        
+        tile.innerHTML = `
+            <div class="mosaic-symbol">${entry.symbol}</div>
+            <div class="mosaic-name">${escapeHtml(entry.name)}</div>
+            <div class="mosaic-message">${escapeHtml(entry.message)}</div>
+        `;
+        
+        grid.appendChild(tile);
+    });
+    
+    // Reinitialize tooltips
+    const newTooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    [...newTooltips].map(el => new bootstrap.Tooltip(el));
+    
+    // Update counter
+    const badge = document.querySelector('.badge');
+    if (badge) {
+        badge.textContent = `${entries.length} celebrations shared`;
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Start auto-refresh every 30 seconds
+refreshInterval = setInterval(refreshMosaic, 30000);
+
+// Clean up on page unload
+window.addEventListener('beforeunload', () => {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+});
+</script>
+{% endblock %}

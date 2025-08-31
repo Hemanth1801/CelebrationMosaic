@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Submit Your Celebration - Celebration Mosaic{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h2 class="mb-0">🎊 Share Your Celebration</h2>
+                    <p class="mb-0 text-muted">Add your message to our festive mosaic!</p>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('submit') }}">
+                        <div class="mb-4">
+                            <label for="name" class="form-label">Your Name</label>
+                            <input type="text" class="form-control" id="name" name="name" maxlength="50" required 
+                                   placeholder="Enter your name">
+                            <div class="form-text">Maximum 50 characters</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="message" class="form-label">Celebration Message</label>
+                            <textarea class="form-control" id="message" name="message" rows="3" maxlength="200" required 
+                                      placeholder="Share your festive message..."></textarea>
+                            <div class="form-text">Maximum 200 characters</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Choose Your Celebratory Symbol</label>
+                            <div class="row g-2">
+                                {% for symbol in symbols %}
+                                <div class="col-12">
+                                    <input type="radio" class="btn-check" name="symbol" id="symbol_{{ loop.index }}" 
+                                           value="{{ symbol.emoji }}" {% if loop.first %}checked{% endif %}>
+                                    <label class="btn btn-outline-primary w-100 d-flex align-items-center" 
+                                           for="symbol_{{ loop.index }}">
+                                        <span class="fs-2 me-3">{{ symbol.emoji }}</span>
+                                        <span>{{ symbol.label }}</span>
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                ✨ Add to Mosaic
+                            </button>
+                            <a href="{{ url_for('mosaic') }}" class="btn btn-outline-secondary">
+                                👀 View Mosaic
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Character counters
+document.getElementById('name').addEventListener('input', function() {
+    const remaining = 50 - this.value.length;
+    const helpText = this.nextElementSibling;
+    helpText.textContent = `${remaining} characters remaining`;
+    if (remaining < 10) {
+        helpText.className = 'form-text text-warning';
+    } else {
+        helpText.className = 'form-text';
+    }
+});
+
+document.getElementById('message').addEventListener('input', function() {
+    const remaining = 200 - this.value.length;
+    const helpText = this.nextElementSibling;
+    helpText.textContent = `${remaining} characters remaining`;
+    if (remaining < 20) {
+        helpText.className = 'form-text text-warning';
+    } else {
+        helpText.className = 'form-text';
+    }
+});
+</script>
+{% endblock %}
