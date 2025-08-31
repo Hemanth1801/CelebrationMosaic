@@ -46,9 +46,10 @@
 
 <script>
 // Photo Mosaic Variables
-let tileSize = 50; // Larger tiles for better text readability
-let mosaicWidth = 800;  // Fixed mosaic width
-let mosaicHeight = 600; // Fixed mosaic height
+let minTileSize = 140; // Minimum tile size to match CSS
+let tileSize = 150; // Default tile size for better text readability
+let mosaicWidth = 1200;  // Larger mosaic width to fit more tiles
+let mosaicHeight = 900; // Larger mosaic height
 let gridCols = 0;
 let gridRows = 0;
 let refreshInterval;
@@ -170,8 +171,9 @@ function setupMosaicGrid() {
     const wrapper = document.getElementById('photoMosaicWrapper');
     wrapper.style.position = 'relative';
     wrapper.style.width = '100%';
-    wrapper.style.maxWidth = '1200px';
+    wrapper.style.maxWidth = '1400px';
     wrapper.style.margin = '0 auto';
+    wrapper.style.overflow = 'hidden';
 }
 
 async function setupDefaultGrid() {
@@ -203,12 +205,15 @@ async function positionTiles(settings = null) {
     gridCols = optimalGrid.cols;
     gridRows = optimalGrid.rows;
     
-    // Calculate tile size to fit fixed mosaic resolution
-    tileSize = Math.min(mosaicWidth / gridCols, mosaicHeight / gridRows);
+    // Calculate tile size to fit fixed mosaic resolution but respect minimum
+    const calculatedSize = Math.min(mosaicWidth / gridCols, mosaicHeight / gridRows);
+    tileSize = Math.max(calculatedSize, minTileSize);
     
     // Adjust actual mosaic size to accommodate the grid perfectly
     const actualWidth = gridCols * tileSize;
     const actualHeight = gridRows * tileSize;
+    
+    console.log(`Grid: ${gridCols}x${gridRows}, Tile Size: ${tileSize}px, Mosaic: ${actualWidth}x${actualHeight}px`);
     
     // Apply grid styles immediately
     requestAnimationFrame(() => {
