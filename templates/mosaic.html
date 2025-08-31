@@ -8,7 +8,8 @@
         <!-- Add quick navigation -->
         <div class="text-center mb-3">
             <a href="{{ url_for('index') }}" class="btn btn-primary me-2">🎊 Add Another Entry</a>
-            <a href="{{ url_for('admin') }}" class="btn btn-outline-secondary">⚙️ Admin</a>
+            <a href="{{ url_for('admin') }}" class="btn btn-outline-secondary me-2">⚙️ Admin</a>
+            <button onclick="startCelebration()" class="btn btn-outline-success btn-sm">🎉 Test Celebration</button>
         </div>
         
         <div class="photo-mosaic-wrapper" id="photoMosaicWrapper">
@@ -325,15 +326,18 @@ function checkForNewEntries() {
         .then(response => response.json())
         .then(entries => {
             const currentCount = entries.length;
+            console.log('Checking entries - Current:', currentCount, 'Last:', lastEntryCount);
             
             // Only refresh if entry count changed or it's the first load
             if (currentCount !== lastEntryCount || lastEntryCount === 0) {
                 const wasNewEntry = lastEntryCount > 0 && currentCount > lastEntryCount;
+                console.log('Entry count changed! Was new entry:', wasNewEntry);
                 lastEntryCount = currentCount;
                 refreshMosaic(entries, wasNewEntry);
                 
                 // Trigger celebration if there's a new entry
                 if (wasNewEntry) {
+                    console.log('🎉 New entry detected! Starting celebration...');
                     setTimeout(() => {
                         startCelebration();
                     }, 1000); // Delay to allow grid to render first
@@ -535,6 +539,8 @@ function updatePhotoMosaicGrid(entries, settings = null, animateNewest = false) 
 }
 
 function startCelebration() {
+    console.log('🎊 Starting celebration!');
+    
     // Create confetti
     createConfetti();
     
@@ -542,8 +548,10 @@ function startCelebration() {
     fetch('/api/entries')
         .then(response => response.json())
         .then(entries => {
+            console.log('Got entries for celebration:', entries.length);
             if (entries.length > 0) {
                 const newestEntry = entries[entries.length - 1];
+                console.log('Showing popup for entry:', newestEntry.name);
                 showCelebrationPopup(newestEntry);
             }
         })
@@ -553,6 +561,7 @@ function startCelebration() {
 }
 
 function createConfetti() {
+    console.log('Creating confetti...');
     const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffa500', '#ff69b4'];
     
     for (let i = 0; i < 50; i++) {
@@ -567,12 +576,17 @@ function createConfetti() {
         
         // Remove confetti after animation
         setTimeout(() => {
-            confetti.remove();
+            if (confetti.parentNode) {
+                confetti.remove();
+            }
         }, 5000);
     }
+    console.log('Confetti created!');
 }
 
 function showCelebrationPopup(entry) {
+    console.log('Showing celebration popup for:', entry.name);
+    
     // Create overlay
     const overlay = document.createElement('div');
     overlay.className = 'celebration-overlay';
@@ -597,8 +611,11 @@ function showCelebrationPopup(entry) {
     overlay.appendChild(popupTile);
     document.body.appendChild(overlay);
     
+    console.log('Popup created and added to body');
+    
     // After popup animation, move to grid
     setTimeout(() => {
+        console.log('Moving popup to grid...');
         movePopupToGrid(popupTile, overlay, entry);
     }, 2000);
 }
