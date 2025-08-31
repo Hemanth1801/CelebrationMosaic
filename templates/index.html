@@ -33,10 +33,11 @@
                                 {% for symbol in symbols %}
                                 <div class="col-12">
                                     <input type="radio" class="btn-check" name="symbol" id="symbol_{{ loop.index }}" 
-                                           value="{{ symbol.emoji }}" {% if loop.first %}checked{% endif %}>
+                                           value="{{ symbol.filename }}" {% if loop.first %}checked{% endif %}>
                                     <label class="btn btn-outline-primary w-100 d-flex align-items-center" 
                                            for="symbol_{{ loop.index }}">
-                                        <span class="fs-2 me-3">{{ symbol.emoji }}</span>
+                                        <img src="{{ url_for('static', filename='symbols/' + symbol.filename) }}" 
+                                             class="symbol-preview me-3" alt="{{ symbol.label }}" width="32" height="32">
                                         <span>{{ symbol.label }}</span>
                                     </label>
                                 </div>

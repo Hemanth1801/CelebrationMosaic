@@ -3,15 +3,15 @@
   "max_entries": 50,
   "symbols": [
     {
-      "emoji": "🪔",
+      "filename": "diya.png",
       "label": "Diya"
     },
     {
-      "emoji": "🎆",
+      "filename": "cracker.png",
       "label": "Cracker"
     },
     {
-      "emoji": "🚀",
+      "filename": "rocket.png",
       "label": "Rocket"
     }
   ],

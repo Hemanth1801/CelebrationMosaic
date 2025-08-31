@@ -93,7 +93,7 @@ def submit():
         
         # Validate symbol is in allowed list
         settings = load_admin_settings()
-        valid_symbols = [s['emoji'] for s in settings['symbols']]
+        valid_symbols = [s['filename'] for s in settings['symbols']]
         if symbol not in valid_symbols:
             flash('Invalid symbol selected!', 'error')
             return redirect(url_for('index'))

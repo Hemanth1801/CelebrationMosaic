@@ -11,7 +11,10 @@
                     {% for entry in entries %}
                     <div class="photo-tile" data-entry-id="{{ loop.index }}" 
                          data-bs-toggle="tooltip" data-bs-title="{{ entry.name }}: {{ entry.message }}">
-                        <div class="tile-bg-symbol">{{ entry.symbol }}</div>
+                        <div class="tile-bg-symbol">
+                            <img src="{{ url_for('static', filename='symbols/' + entry.symbol) }}" 
+                                 alt="Symbol" class="symbol-image">
+                        </div>
                         <div class="tile-content">
                             <div class="tile-name">{{ entry.name[:15] }}{% if entry.name|length > 15 %}...{% endif %}</div>
                             <div class="tile-message">{{ entry.message[:35] }}{% if entry.message|length > 35 %}...{% endif %}</div>
@@ -394,7 +397,9 @@ function updatePhotoMosaicGrid(entries, settings = null) {
         const message = entry.message.length > 35 ? entry.message.substring(0, 35) + '...' : entry.message;
         
         tile.innerHTML = `
-            <div class="tile-bg-symbol">${entry.symbol}</div>
+            <div class="tile-bg-symbol">
+                <img src="/static/symbols/${entry.symbol}" alt="Symbol" class="symbol-image">
+            </div>
             <div class="tile-content">
                 <div class="tile-name">${escapeHtml(name)}</div>
                 <div class="tile-message">${escapeHtml(message)}</div>
