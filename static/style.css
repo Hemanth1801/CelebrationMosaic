@@ -14,6 +14,9 @@
     justify-content: center;
     align-items: center;
     min-height: 70vh;
+    /* Enable hardware acceleration for smooth scaling */
+    transform: translateZ(0);
+    backface-visibility: hidden;
 }
 
 .photo-mosaic-grid {
@@ -34,11 +37,18 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    font-size: 7px;
+    font-size: clamp(6px, 1.5vw, 12px);
     line-height: 1;
     overflow: hidden;
     cursor: pointer;
     box-sizing: border-box;
+    /* High-quality scaling */
+    image-rendering: auto;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    will-change: transform;
 }
 
 .photo-tile:hover {
@@ -60,20 +70,22 @@
 }
 
 .tile-symbol {
-    font-size: 8px;
+    font-size: clamp(8px, 2vw, 16px);
     line-height: 1;
     margin: 0;
     padding: 0;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
 }
 
 .photo-tile:hover .tile-symbol {
-    font-size: 24px;
+    font-size: clamp(20px, 5vw, 30px);
     margin-bottom: 3px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
 
 .tile-name {
     font-weight: bold;
-    font-size: 3px;
+    font-size: clamp(2px, 0.8vw, 6px);
     margin: 0;
     padding: 0;
     white-space: nowrap;
@@ -83,15 +95,15 @@
 }
 
 .photo-tile:hover .tile-name {
-    font-size: 12px;
+    font-size: clamp(10px, 2.5vw, 14px);
     margin-bottom: 2px;
     white-space: normal;
     opacity: 1;
 }
 
 .tile-message {
-    font-size: 2px;
-    line-height: 1;
+    font-size: clamp(1px, 0.6vw, 4px);
+    line-height: 1.1;
     margin: 0;
     padding: 0;
     overflow: hidden;
@@ -102,7 +114,7 @@
 }
 
 .photo-tile:hover .tile-message {
-    font-size: 10px;
+    font-size: clamp(8px, 2vw, 12px);
     line-height: 1.3;
     -webkit-line-clamp: 4;
     opacity: 1;

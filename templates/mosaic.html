@@ -45,11 +45,12 @@
 let backgroundImage = null;
 let backgroundImageData = null;
 let tileSize = 20;
-let mosaicWidth = 0;
-let mosaicHeight = 0;
+let mosaicWidth = 800;  // Fixed logo resolution width
+let mosaicHeight = 600; // Fixed logo resolution height
 let gridCols = 0;
 let gridRows = 0;
 let refreshInterval;
+let totalEntries = 0;
 
 // Initialize photo mosaic
 document.addEventListener('DOMContentLoaded', function() {
@@ -100,27 +101,50 @@ function loadBackgroundImage(url) {
     backgroundImage.src = url;
 }
 
+function calculateOptimalGrid(numEntries) {
+    if (numEntries === 0) return { cols: 1, rows: 1 };
+    
+    // Calculate grid dimensions based on number of entries
+    // Try to maintain logo aspect ratio (4:3)
+    const aspectRatio = mosaicWidth / mosaicHeight;
+    
+    // Find the best grid size for the number of entries
+    let bestCols = 1, bestRows = 1;
+    let minWaste = Infinity;
+    
+    for (let cols = 1; cols <= Math.ceil(Math.sqrt(numEntries * aspectRatio)) + 5; cols++) {
+        const rows = Math.ceil(numEntries / cols);
+        const totalCells = cols * rows;
+        const waste = totalCells - numEntries;
+        const currentRatio = cols / rows;
+        const ratioError = Math.abs(currentRatio - aspectRatio);
+        
+        // Prefer grids closer to target aspect ratio with less waste
+        const score = waste + (ratioError * 10);
+        
+        if (score < minWaste) {
+            minWaste = score;
+            bestCols = cols;
+            bestRows = rows;
+        }
+    }
+    
+    return { cols: bestCols, rows: bestRows };
+}
+
 function analyzeBackgroundImage() {
     const canvas = document.getElementById('analysisCanvas');
     const ctx = canvas.getContext('2d');
     
-    // Set canvas size based on viewport - higher resolution
-    const wrapper = document.getElementById('photoMosaicWrapper');
-    mosaicWidth = Math.min(wrapper.clientWidth, 1600);
-    mosaicHeight = Math.min(mosaicWidth * 0.75, 1200);
-    
-    // Calculate grid dimensions first
-    gridCols = Math.floor(mosaicWidth / tileSize);
-    gridRows = Math.floor(mosaicHeight / tileSize);
-    
-    // Adjust mosaic size to fit exact grid
-    mosaicWidth = gridCols * tileSize;
-    mosaicHeight = gridRows * tileSize;
-    
+    // Use fixed resolution for consistent quality
     canvas.width = mosaicWidth;
     canvas.height = mosaicHeight;
     
-    // Draw background image for analysis only
+    // Enable high-quality image rendering
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    
+    // Draw background image at fixed resolution
     ctx.drawImage(backgroundImage, 0, 0, mosaicWidth, mosaicHeight);
     
     // Get image data for pixel analysis
@@ -136,12 +160,11 @@ function setupMosaicGrid() {
 }
 
 function setupDefaultGrid() {
-    // Fallback when background image fails to load
-    const wrapper = document.getElementById('photoMosaicWrapper');
-    mosaicWidth = Math.min(wrapper.clientWidth, 1600);
-    mosaicHeight = Math.min(mosaicWidth * 0.75, 1200);
-    gridCols = Math.floor(mosaicWidth / tileSize);
-    gridRows = Math.floor(mosaicHeight / tileSize);
+    // Use fixed resolution even when background image fails
+    const grid = calculateOptimalGrid(totalEntries);
+    gridCols = grid.cols;
+    gridRows = grid.rows;
+    tileSize = Math.min(mosaicWidth / gridCols, mosaicHeight / gridRows);
     positionTiles();
 }
 
@@ -163,34 +186,55 @@ function positionTiles() {
     const tiles = document.querySelectorAll('.photo-tile');
     const grid = document.getElementById('photoMosaicGrid');
     
-    if (!grid || tiles.length === 0) return;
+    if (!grid) return;
+    
+    // Calculate optimal grid based on actual number of entries
+    totalEntries = tiles.length;
+    if (totalEntries === 0) return;
+    
+    const optimalGrid = calculateOptimalGrid(totalEntries);
+    gridCols = optimalGrid.cols;
+    gridRows = optimalGrid.rows;
+    
+    // Calculate tile size to fit fixed mosaic resolution
+    tileSize = Math.min(mosaicWidth / gridCols, mosaicHeight / gridRows);
+    
+    // Adjust actual mosaic size to accommodate the grid perfectly
+    const actualWidth = gridCols * tileSize;
+    const actualHeight = gridRows * tileSize;
     
     grid.style.position = 'relative';
-    grid.style.width = mosaicWidth + 'px';
-    grid.style.height = mosaicHeight + 'px';
+    grid.style.width = actualWidth + 'px';
+    grid.style.height = actualHeight + 'px';
     grid.style.margin = '0 auto';
     grid.style.border = '2px solid rgba(255,255,255,0.3)';
+    grid.style.imageRendering = 'pixelated'; // For crisp scaling when needed
+    grid.style.imageRendering = '-moz-crisp-edges';
+    grid.style.imageRendering = 'crisp-edges';
     
     // Create grid positions that match the background image
     const positions = [];
     for (let row = 0; row < gridRows; row++) {
         for (let col = 0; col < gridCols; col++) {
+            if (positions.length >= totalEntries) break;
+            
             const x = col * tileSize;
             const y = row * tileSize;
-            const centerX = x + tileSize / 2;
-            const centerY = y + tileSize / 2;
-            const pixelData = getPixelData(centerX, centerY);
+            
+            // Map position to original logo resolution for color sampling
+            const logoX = (col / gridCols) * mosaicWidth;
+            const logoY = (row / gridRows) * mosaicHeight;
+            const pixelData = getPixelData(logoX, logoY);
             
             positions.push({ 
                 x, y, 
                 color: pixelData,
-                row, col,
-                used: false 
+                row, col 
             });
         }
     }
     
-    // Fill grid positions sequentially to maintain image structure
+    // Position tiles with high-quality scaling
     tiles.forEach((tile, index) => {
         if (index < positions.length) {
             const pos = positions[index];
@@ -200,45 +244,29 @@ function positionTiles() {
             tile.style.width = tileSize + 'px';
             tile.style.height = tileSize + 'px';
             
+            // Enable high-quality scaling
+            tile.style.imageRendering = 'auto';
+            tile.style.imageRendering = '-webkit-optimize-contrast';
+            tile.style.transform = 'translateZ(0)'; // Force hardware acceleration
+            
             // Apply color tinting to match background image
             const { r, g, b, brightness } = pos.color;
-            const alpha = brightness < 100 ? 0.7 : brightness > 200 ? 0.95 : 0.85;
             
-            // Create color overlay effect
-            tile.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.3)`;
-            tile.style.borderColor = `rgba(${r}, ${g}, ${b}, 0.5)`;
+            // Create color overlay effect with better blending
+            tile.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.4)`;
+            tile.style.borderColor = `rgba(${r}, ${g}, ${b}, 0.6)`;
+            tile.style.mixBlendMode = 'multiply';
             
             // Adjust text color for contrast
             if (brightness < 128) {
                 tile.style.color = '#fff';
-                tile.style.textShadow = '1px 1px 2px rgba(0,0,0,0.8)';
+                tile.style.textShadow = '1px 1px 2px rgba(0,0,0,0.9)';
             } else {
                 tile.style.color = '#000';
-                tile.style.textShadow = '1px 1px 2px rgba(255,255,255,0.8)';
+                tile.style.textShadow = '1px 1px 2px rgba(255,255,255,0.9)';
             }
         }
     });
-    
-    // Fill empty positions with placeholder tiles if we have fewer submissions
-    const totalPositions = gridRows * gridCols;
-    if (tiles.length < totalPositions) {
-        for (let i = tiles.length; i < totalPositions; i++) {
-            const pos = positions[i];
-            const emptyTile = document.createElement('div');
-            emptyTile.className = 'photo-tile empty-tile';
-            emptyTile.style.position = 'absolute';
-            emptyTile.style.left = pos.x + 'px';
-            emptyTile.style.top = pos.y + 'px';
-            emptyTile.style.width = tileSize + 'px';
-            emptyTile.style.height = tileSize + 'px';
-            
-            const { r, g, b } = pos.color;
-            emptyTile.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.6)`;
-            emptyTile.style.border = `1px solid rgba(${r}, ${g}, ${b}, 0.8)`;
-            
-            grid.appendChild(emptyTile);
-        }
-    }
 }
 
 function refreshMosaic() {
