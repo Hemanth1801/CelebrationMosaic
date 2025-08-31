@@ -57,19 +57,6 @@ let currentLogoUrl = '';
 document.addEventListener('DOMContentLoaded', function() {
     initializePhotoMosaic();
     initializeTooltips();
-    
-    // Check if we should celebrate a new submission
-    const urlParams = new URLSearchParams(window.location.search);
-    const shouldCelebrate = urlParams.get('celebrate') === 'true';
-    if (shouldCelebrate) {
-        // Clear the URL parameter
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Start celebration after brief delay
-        setTimeout(() => {
-            startCelebration();
-        }, 500);
-    }
 });
 
 function initializeTooltips() {
@@ -344,6 +331,13 @@ function checkForNewEntries() {
                 const wasNewEntry = lastEntryCount > 0 && currentCount > lastEntryCount;
                 lastEntryCount = currentCount;
                 refreshMosaic(entries, wasNewEntry);
+                
+                // Trigger celebration if there's a new entry
+                if (wasNewEntry) {
+                    setTimeout(() => {
+                        startCelebration();
+                    }, 1000); // Delay to allow grid to render first
+                }
             }
         })
         .catch(error => {

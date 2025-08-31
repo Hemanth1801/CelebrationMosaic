@@ -119,7 +119,7 @@ def submit():
         save_data(data)
         
         flash('Your submission has been added to the mosaic!', 'success')
-        return redirect(url_for('mosaic', celebrate='true'))
+        return redirect(url_for('index'))
         
     except Exception as e:
         logging.error(f"Error in submit: {e}")
