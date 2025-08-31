@@ -1,170 +1,30 @@
 [
   {
-    "id": "7b3d6742-4c97-4bad-9e7c-7bbd292246c9",
-    "name": "admin",
-    "message": "lolo",
-    "symbol": "diya.png",
-    "timestamp": "2025-08-31T17:14:02.583160"
-  },
-  {
-    "id": "2eb66234-7067-4a75-976b-d4372234b2cf",
+    "id": "058cfd2e-c646-41f5-9419-615b98d148f2",
     "name": "hemanth",
-    "message": "nice",
-    "symbol": "cracker.png",
-    "timestamp": "2025-08-31T17:14:24.647484"
+    "message": "heheheh",
+    "symbol": "diya.png",
+    "timestamp": "2025-08-31T19:38:05.013478"
   },
   {
-    "id": "62d5ccef-8fcb-4903-9fd6-0cce477d8dbf",
-    "name": "chinnu",
-    "message": "beautiful",
-    "symbol": "cracker.png",
-    "timestamp": "2025-08-31T17:14:58.262943"
-  },
-  {
-    "id": "17d56283-2b53-423a-8e23-72cd1af8ae82",
+    "id": "c109d978-5660-46aa-94ac-e291b1019541",
     "name": "vamsi",
-    "message": "awsome diwali",
-    "symbol": "rocket.png",
-    "timestamp": "2025-08-31T17:25:26.728155"
-  },
-  {
-    "id": "4e6a6929-5f5b-4d9d-a315-fe78ba71bc9f",
-    "name": "pandu",
-    "message": "balayya eeeeeewwwwwwwwwwwww",
+    "message": "hgjhgjhghj",
     "symbol": "diya.png",
-    "timestamp": "2025-08-31T17:26:28.051561"
+    "timestamp": "2025-08-31T19:38:24.097663"
   },
   {
-    "id": "e2aa46ff-21d5-4833-8232-b9a846d8e987",
-    "name": "rama",
-    "message": "bhoom shakalaka",
-    "symbol": "diya.png",
-    "timestamp": "2025-08-31T17:26:46.820252"
-  },
-  {
-    "id": "eb4bcf91-42ed-4468-afe1-3f83d6aa5677",
-    "name": "lakshmi",
-    "message": "dimbakaa",
-    "symbol": "diya.png",
-    "timestamp": "2025-08-31T17:27:02.180613"
-  },
-  {
-    "id": "845e168c-e49b-44d1-935c-e6805c6e16f6",
-    "name": "hemanth",
-    "message": "i dont know",
-    "symbol": "cracker.png",
-    "timestamp": "2025-08-31T18:28:07.487744"
-  },
-  {
-    "id": "e4881a27-fdda-40b2-9622-39bd26534e04",
-    "name": "hemanth",
-    "message": "i dont know",
-    "symbol": "cracker.png",
-    "timestamp": "2025-08-31T18:35:19.117275"
-  },
-  {
-    "id": "61757aad-19d9-4023-9e94-dd12eab69f70",
-    "name": "hemanth",
-    "message": "newyork",
-    "symbol": "diya.png",
-    "timestamp": "2025-08-31T18:35:42.128505"
-  },
-  {
-    "id": "354176c8-baa6-4719-bd3a-ae2a33a6ef52",
+    "id": "2216098c-7559-4c4c-a379-794c5f01bc4c",
     "name": "administrator",
-    "message": "yes",
-    "symbol": "diya.png",
-    "timestamp": "2025-08-31T18:36:29.012084"
-  },
-  {
-    "id": "028f71a3-04cb-454f-931c-36a8a0459148",
-    "name": "vamsi",
-    "message": "yesss",
-    "symbol": "rocket.png",
-    "timestamp": "2025-08-31T18:37:06.419814"
-  },
-  {
-    "id": "bfab39ff-ba77-43d9-ab08-aa53744037ff",
-    "name": "kumar",
-    "message": "new here",
-    "symbol": "diya.png",
-    "timestamp": "2025-08-31T18:42:36.043471"
-  },
-  {
-    "id": "e7845046-8104-4d9a-b4cc-6b96f82eddc5",
-    "name": "chinnu",
-    "message": "im here",
-    "symbol": "diya.png",
-    "timestamp": "2025-08-31T18:43:14.825887"
-  },
-  {
-    "id": "a4bcfe6f-9207-4a84-827a-11c66dfcd59a",
-    "name": "vam",
-    "message": "shhhit",
-    "symbol": "diya.png",
-    "timestamp": "2025-08-31T18:51:09.826067"
-  },
-  {
-    "id": "4b30dbad-3c6c-4a7e-abc2-cdc886d34ffb",
-    "name": "vam",
-    "message": "shhhit",
-    "symbol": "diya.png",
-    "timestamp": "2025-08-31T18:57:04.819888"
-  },
-  {
-    "id": "c2f36b0b-6769-41c2-a52e-a53cff946047",
-    "name": "hemanth",
-    "message": "gkghgkh",
-    "symbol": "diya.png",
-    "timestamp": "2025-08-31T18:57:32.635889"
-  },
-  {
-    "id": "2053c66e-4ffc-47d3-814a-b1c240648558",
-    "name": "hemanth",
-    "message": "hi im here",
-    "symbol": "diya.png",
-    "timestamp": "2025-08-31T19:00:50.802791"
-  },
-  {
-    "id": "0a863986-e59b-4f01-90ce-a38312518ca2",
-    "name": "vamsi",
-    "message": "bkhkhk",
-    "symbol": "diya.png",
-    "timestamp": "2025-08-31T19:02:46.020140"
-  },
-  {
-    "id": "0ec40b10-0ac4-4bfc-a919-87363917f356",
-    "name": "vam",
-    "message": "hvkjhb",
-    "symbol": "diya.png",
-    "timestamp": "2025-08-31T19:03:29.757006"
-  },
-  {
-    "id": "db774894-fe2b-49c7-9ddc-ab5db90558d8",
-    "name": "chinnu",
-    "message": "ufufufyug",
-    "symbol": "rocket.png",
-    "timestamp": "2025-08-31T19:03:57.112262"
-  },
-  {
-    "id": "a2d139ad-9353-4109-a6bf-455d2c877f96",
-    "name": "hemanth",
-    "message": "hheeh",
-    "symbol": "diya.png",
-    "timestamp": "2025-08-31T19:13:38.974564"
-  },
-  {
-    "id": "c3f79f9e-8dc0-4fef-83e3-0c6a067d74ea",
-    "name": "hemanth",
-    "message": "hey myan",
-    "symbol": "diya.png",
-    "timestamp": "2025-08-31T19:18:52.673422"
-  },
-  {
-    "id": "62c6734d-dcd9-4174-bf96-a4ebd3067f32",
-    "name": "vamsi",
-    "message": "this is the best Diwali",
+    "message": "hgfjhjhgjh",
     "symbol": "cracker.png",
-    "timestamp": "2025-08-31T19:20:22.300075"
+    "timestamp": "2025-08-31T19:39:05.483963"
+  },
+  {
+    "id": "8010fe1b-6c21-45de-bcf5-97993439aeb3",
+    "name": "vam",
+    "message": "sheeee",
+    "symbol": "diya.png",
+    "timestamp": "2025-08-31T19:39:29.268306"
   }
 ]
