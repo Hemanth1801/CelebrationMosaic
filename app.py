@@ -37,6 +37,9 @@ def load_admin_settings():
     default_settings = {
         "logo_filename": "logo.png",
         "max_entries": 50,
+        "grid_mode": "auto",  # "auto" or "manual"
+        "grid_rows": 10,
+        "grid_cols": 12,
         "symbols": [
             {"emoji": "🪔", "label": "Diya"},
             {"emoji": "🎆", "label": "Cracker"},
@@ -190,6 +193,19 @@ def update_settings():
         max_entries = request.form.get('max_entries', type=int)
         if max_entries and max_entries > 0:
             settings['max_entries'] = max_entries
+        
+        # Update grid settings
+        grid_mode = request.form.get('grid_mode', 'auto')
+        settings['grid_mode'] = grid_mode
+        
+        if grid_mode == 'manual':
+            grid_rows = request.form.get('grid_rows', type=int)
+            grid_cols = request.form.get('grid_cols', type=int)
+            
+            if grid_rows and grid_rows > 0 and grid_rows <= 50:
+                settings['grid_rows'] = grid_rows
+            if grid_cols and grid_cols > 0 and grid_cols <= 50:
+                settings['grid_cols'] = grid_cols
         
         save_admin_settings(settings)
         flash('Settings updated successfully!', 'success')

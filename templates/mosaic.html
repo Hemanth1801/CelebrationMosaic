@@ -101,7 +101,14 @@ function loadBackgroundImage(url) {
     backgroundImage.src = url;
 }
 
-function calculateOptimalGrid(numEntries) {
+function calculateOptimalGrid(numEntries, settings) {
+    if (settings && settings.grid_mode === 'manual') {
+        return { 
+            cols: settings.grid_cols || 12, 
+            rows: settings.grid_rows || 10 
+        };
+    }
+    
     if (numEntries === 0) return { cols: 1, rows: 1 };
     
     // Calculate grid dimensions based on number of entries
@@ -161,7 +168,7 @@ function setupMosaicGrid() {
 
 function setupDefaultGrid() {
     // Use fixed resolution even when background image fails
-    const grid = calculateOptimalGrid(totalEntries);
+    const grid = calculateOptimalGrid(totalEntries, null);
     gridCols = grid.cols;
     gridRows = grid.rows;
     tileSize = Math.min(mosaicWidth / gridCols, mosaicHeight / gridRows);
@@ -182,17 +189,16 @@ function getPixelData(x, y) {
     return { r, g, b, brightness };
 }
 
-function positionTiles() {
+function positionTiles(settings = null) {
     const tiles = document.querySelectorAll('.photo-tile');
     const grid = document.getElementById('photoMosaicGrid');
     
     if (!grid) return;
     
-    // Calculate optimal grid based on actual number of entries
+    // Calculate optimal grid based on settings and number of entries
     totalEntries = tiles.length;
-    if (totalEntries === 0) return;
     
-    const optimalGrid = calculateOptimalGrid(totalEntries);
+    const optimalGrid = calculateOptimalGrid(totalEntries, settings);
     gridCols = optimalGrid.cols;
     gridRows = optimalGrid.rows;
     
@@ -216,7 +222,6 @@ function positionTiles() {
     const positions = [];
     for (let row = 0; row < gridRows; row++) {
         for (let col = 0; col < gridCols; col++) {
-            if (positions.length >= totalEntries) break;
             
             const x = col * tileSize;
             const y = row * tileSize;
@@ -267,6 +272,30 @@ function positionTiles() {
             }
         }
     });
+    
+    // Fill remaining positions with empty tiles (for manual mode or when we have fewer entries than grid cells)
+    const totalPositions = gridCols * gridRows;
+    if (totalPositions > tiles.length) {
+        for (let i = tiles.length; i < totalPositions; i++) {
+            if (i < positions.length) {
+                const pos = positions[i];
+                const emptyTile = document.createElement('div');
+                emptyTile.className = 'photo-tile empty-tile';
+                emptyTile.style.position = 'absolute';
+                emptyTile.style.left = pos.x + 'px';
+                emptyTile.style.top = pos.y + 'px';
+                emptyTile.style.width = tileSize + 'px';
+                emptyTile.style.height = tileSize + 'px';
+                
+                const { r, g, b } = pos.color;
+                emptyTile.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.6)`;
+                emptyTile.style.border = `1px solid rgba(${r}, ${g}, ${b}, 0.8)`;
+                emptyTile.style.mixBlendMode = 'multiply';
+                
+                grid.appendChild(emptyTile);
+            }
+        }
+    }
 }
 
 function refreshMosaic() {
@@ -285,7 +314,7 @@ function refreshMosaic() {
             loadBackgroundImage(newLogoUrl);
         }
         
-        updatePhotoMosaicGrid(entries);
+        updatePhotoMosaicGrid(entries, settings);
     })
     .catch(error => {
         console.error('Error refreshing mosaic:', error);
@@ -297,18 +326,27 @@ function refreshMosaic() {
     });
 }
 
-function updatePhotoMosaicGrid(entries) {
+function updatePhotoMosaicGrid(entries, settings = null) {
     const grid = document.getElementById('photoMosaicGrid');
     if (!grid) return;
-    
-    if (entries.length === 0) {
-        window.location.reload();
-        return;
-    }
     
     // Clear existing tiles (keep the grid structure)
     const existingTiles = grid.querySelectorAll('.photo-tile, .empty-tile');
     existingTiles.forEach(tile => tile.remove());
+    
+    if (entries.length === 0 && (!settings || settings.grid_mode !== 'manual')) {
+        // Only reload if we're in auto mode and have no entries
+        const emptyMessage = document.createElement('div');
+        emptyMessage.className = 'empty-mosaic text-center py-5';
+        emptyMessage.innerHTML = `
+            <div class="display-1 mb-3 text-white-50">🎊</div>
+            <h3 class="text-white">Building photo mosaic...</h3>
+            <p class="text-white-50">Waiting for celebration tiles to appear</p>
+            <p class="text-white-50 small">Auto-refreshing every 10 seconds</p>
+        `;
+        grid.appendChild(emptyMessage);
+        return;
+    }
     
     entries.forEach((entry, index) => {
         const tile = document.createElement('div');
@@ -331,14 +369,17 @@ function updatePhotoMosaicGrid(entries) {
     
     // Reposition tiles after update
     setTimeout(() => {
-        positionTiles();
+        positionTiles(settings);
         initializeTooltips();
     }, 100);
     
     // Update counter
     const badge = document.querySelector('.badge.bg-info');
     if (badge) {
-        badge.textContent = `${entries.length} tiles`;
+        const totalTiles = settings && settings.grid_mode === 'manual' 
+            ? (settings.grid_rows || 10) * (settings.grid_cols || 12)
+            : entries.length;
+        badge.textContent = `${entries.length}/${totalTiles} tiles`;
     }
 }
 

@@ -56,6 +56,48 @@
                             <strong>Current Entry Count:</strong> 
                             <span class="badge bg-info">{{ entry_count }}</span>
                         </div>
+                        
+                        <hr>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Mosaic Grid Settings</label>
+                            <div class="mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="grid_mode" id="grid_auto" 
+                                           value="auto" {% if settings.grid_mode == 'auto' %}checked{% endif %}>
+                                    <label class="form-check-label" for="grid_auto">
+                                        Auto: Based on number of entries
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="grid_mode" id="grid_manual" 
+                                           value="manual" {% if settings.grid_mode == 'manual' %}checked{% endif %}>
+                                    <label class="form-check-label" for="grid_manual">
+                                        Manual: Fixed grid size
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="manualGridSettings" class="mb-3" style="display: {% if settings.grid_mode == 'manual' %}block{% else %}none{% endif %};">
+                            <div class="row">
+                                <div class="col-6">
+                                    <label for="grid_rows" class="form-label">Rows</label>
+                                    <input type="number" class="form-control" id="grid_rows" name="grid_rows" 
+                                           value="{{ settings.grid_rows }}" min="1" max="50">
+                                </div>
+                                <div class="col-6">
+                                    <label for="grid_cols" class="form-label">Columns</label>
+                                    <input type="number" class="form-control" id="grid_cols" name="grid_cols" 
+                                           value="{{ settings.grid_cols }}" min="1" max="50">
+                                </div>
+                            </div>
+                            <div class="form-text">
+                                Total tiles: <span id="totalTiles">{{ settings.grid_rows * settings.grid_cols }}</span>
+                                <br>Empty tiles will be filled with background colors if there are fewer entries.
+                            </div>
+                        </div>
+                        
                         <button type="submit" class="btn btn-primary">💾 Save Settings</button>
                     </form>
                 </div>
@@ -172,5 +214,34 @@ function showRouteInfo() {
 Each route is designed to run on separate devices.
 The mosaic automatically refreshes every 10 seconds.`);
 }
+
+// Grid settings toggle
+document.addEventListener('DOMContentLoaded', function() {
+    const autoRadio = document.getElementById('grid_auto');
+    const manualRadio = document.getElementById('grid_manual');
+    const manualSettings = document.getElementById('manualGridSettings');
+    const rowsInput = document.getElementById('grid_rows');
+    const colsInput = document.getElementById('grid_cols');
+    const totalTilesSpan = document.getElementById('totalTiles');
+    
+    function toggleGridSettings() {
+        if (manualRadio.checked) {
+            manualSettings.style.display = 'block';
+        } else {
+            manualSettings.style.display = 'none';
+        }
+    }
+    
+    function updateTotalTiles() {
+        const rows = parseInt(rowsInput.value) || 1;
+        const cols = parseInt(colsInput.value) || 1;
+        totalTilesSpan.textContent = rows * cols;
+    }
+    
+    autoRadio.addEventListener('change', toggleGridSettings);
+    manualRadio.addEventListener('change', toggleGridSettings);
+    rowsInput.addEventListener('input', updateTotalTiles);
+    colsInput.addEventListener('input', updateTotalTiles);
+});
 </script>
 {% endblock %}
