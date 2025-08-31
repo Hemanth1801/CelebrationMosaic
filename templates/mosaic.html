@@ -234,22 +234,22 @@ function positionTiles(settings = null) {
             positions.push({ 
                 x, y, 
                 color: pixelData,
-                row, col 
+                row, col,
+                index: positions.length
             });
         }
     }
     
-    // Shuffle positions randomly for user entries
-    const shuffledPositions = [...positions];
-    for (let i = shuffledPositions.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffledPositions[i], shuffledPositions[j]] = [shuffledPositions[j], shuffledPositions[i]];
-    }
+    // Get or create persistent position assignments for entries
+    const entryPositions = getEntryPositions(tiles.length, positions.length);
     
-    // Position tiles with high-quality scaling using shuffled positions
+    // Position tiles using persistent entry positions
     tiles.forEach((tile, index) => {
-        if (index < shuffledPositions.length) {
-            const pos = shuffledPositions[index];
+        const entryId = tile.getAttribute('data-entry-id');
+        const positionIndex = entryPositions[entryId] || entryPositions[index] || 0;
+        
+        if (positionIndex < positions.length) {
+            const pos = positions[positionIndex];
             tile.style.position = 'absolute';
             tile.style.left = pos.x + 'px';
             tile.style.top = pos.y + 'px';
@@ -280,17 +280,15 @@ function positionTiles(settings = null) {
         }
     });
     
-    // Fill remaining positions with empty tiles using original ordered positions
+    // Fill remaining positions with empty tiles
     const totalPositions = gridCols * gridRows;
     if (totalPositions > tiles.length) {
-        // Use positions that weren't taken by user entries for empty tiles
-        const usedPositions = new Set(shuffledPositions.slice(0, tiles.length).map(p => `${p.row}-${p.col}`));
+        // Find unused positions
+        const usedPositionIndices = new Set(Object.values(entryPositions).slice(0, tiles.length));
         
         for (let i = 0; i < positions.length; i++) {
-            const pos = positions[i];
-            const posKey = `${pos.row}-${pos.col}`;
-            
-            if (!usedPositions.has(posKey)) {
+            if (!usedPositionIndices.has(i)) {
+                const pos = positions[i];
                 const emptyTile = document.createElement('div');
                 emptyTile.className = 'photo-tile empty-tile';
                 emptyTile.style.position = 'absolute';
@@ -338,6 +336,64 @@ function refreshMosaic() {
     });
 }
 
+function getEntryPositions(entryCount, totalPositions) {
+    // Get existing position assignments from localStorage
+    let savedPositions = {};
+    try {
+        savedPositions = JSON.parse(localStorage.getItem('entryPositions') || '{}');
+    } catch (e) {
+        savedPositions = {};
+    }
+    
+    // Create shuffled position pool if it doesn't exist
+    let availablePositions = [];
+    try {
+        availablePositions = JSON.parse(localStorage.getItem('availablePositions') || '[]');
+    } catch (e) {
+        availablePositions = [];
+    }
+    
+    // Initialize position pool if empty or wrong size
+    if (availablePositions.length === 0 || availablePositions.length !== totalPositions) {
+        availablePositions = Array.from({length: totalPositions}, (_, i) => i);
+        // Shuffle the available positions
+        for (let i = availablePositions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [availablePositions[i], availablePositions[j]] = [availablePositions[j], availablePositions[i]];
+        }
+        localStorage.setItem('availablePositions', JSON.stringify(availablePositions));
+    }
+    
+    // Assign positions to entries that don't have them
+    const currentEntryIds = Array.from(document.querySelectorAll('.photo-tile')).map(tile => 
+        tile.getAttribute('data-entry-id') || String(Array.from(tile.parentNode.children).indexOf(tile))
+    );
+    
+    let nextPositionIndex = 0;
+    currentEntryIds.forEach((entryId, index) => {
+        if (!(entryId in savedPositions)) {
+            // Find next available position
+            while (nextPositionIndex < availablePositions.length && 
+                   Object.values(savedPositions).includes(availablePositions[nextPositionIndex])) {
+                nextPositionIndex++;
+            }
+            
+            if (nextPositionIndex < availablePositions.length) {
+                savedPositions[entryId] = availablePositions[nextPositionIndex];
+                nextPositionIndex++;
+            } else {
+                // Fallback to index if we run out of positions
+                savedPositions[entryId] = index % totalPositions;
+            }
+        }
+    });
+    
+    // Save updated positions
+    localStorage.setItem('entryPositions', JSON.stringify(savedPositions));
+    
+    return savedPositions;
+}
+
 function updatePhotoMosaicGrid(entries, settings = null) {
     const grid = document.getElementById('photoMosaicGrid');
     if (!grid) return;
@@ -363,7 +419,9 @@ function updatePhotoMosaicGrid(entries, settings = null) {
     entries.forEach((entry, index) => {
         const tile = document.createElement('div');
         tile.className = 'photo-tile';
-        tile.setAttribute('data-entry-id', index + 1);
+        // Use entry ID if available, otherwise fall back to index
+        const entryId = entry.id || String(index);
+        tile.setAttribute('data-entry-id', entryId);
         tile.setAttribute('data-bs-toggle', 'tooltip');
         tile.setAttribute('data-bs-title', `${escapeHtml(entry.name)}: ${escapeHtml(entry.message)}`);
         

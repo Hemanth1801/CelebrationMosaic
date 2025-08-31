@@ -16,6 +16,6 @@
     }
   ],
   "grid_mode": "manual",
-  "grid_rows": 3,
-  "grid_cols": 2
+  "grid_rows": 20,
+  "grid_cols": 20
 }

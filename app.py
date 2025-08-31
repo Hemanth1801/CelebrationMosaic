@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import uuid
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from werkzeug.utils import secure_filename
 from datetime import datetime
@@ -97,8 +98,9 @@ def submit():
             flash('Invalid symbol selected!', 'error')
             return redirect(url_for('index'))
         
-        # Create new entry
+        # Create new entry with unique ID for position tracking
         new_entry = {
+            'id': str(uuid.uuid4()),  # Unique identifier for position consistency
             'name': name,
             'message': message,
             'symbol': symbol,
