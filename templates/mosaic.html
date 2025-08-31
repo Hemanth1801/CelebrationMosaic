@@ -755,10 +755,7 @@ function escapeHtml(text) {
 // Handle window resize
 window.addEventListener('resize', function() {
     setTimeout(() => {
-        if (backgroundImage && backgroundImage.complete) {
-            analyzeBackgroundImage();
-            positionTiles();
-        }
+        positionTiles();
     }, 250);
 });
 
