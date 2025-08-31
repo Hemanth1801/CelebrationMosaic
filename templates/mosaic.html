@@ -44,7 +44,7 @@
 // Photo Mosaic Variables
 let backgroundImage = null;
 let backgroundImageData = null;
-let tileSize = 40;
+let tileSize = 20;
 let mosaicWidth = 0;
 let mosaicHeight = 0;
 let gridCols = 0;
@@ -89,10 +89,10 @@ function analyzeBackgroundImage() {
     const canvas = document.getElementById('analysisCanvas');
     const ctx = canvas.getContext('2d');
     
-    // Set canvas size based on viewport
+    // Set canvas size based on viewport - higher resolution
     const wrapper = document.getElementById('photoMosaicWrapper');
-    mosaicWidth = Math.min(wrapper.clientWidth, 1000);
-    mosaicHeight = Math.min(mosaicWidth * 0.6, 600);
+    mosaicWidth = Math.min(wrapper.clientWidth, 1600);
+    mosaicHeight = Math.min(mosaicWidth * 0.75, 1200);
     
     // Calculate grid dimensions first
     gridCols = Math.floor(mosaicWidth / tileSize);
@@ -123,8 +123,8 @@ function setupMosaicGrid() {
 function setupDefaultGrid() {
     // Fallback when background image fails to load
     const wrapper = document.getElementById('photoMosaicWrapper');
-    mosaicWidth = Math.min(wrapper.clientWidth, 1200);
-    mosaicHeight = Math.min(mosaicWidth * 0.75, 800);
+    mosaicWidth = Math.min(wrapper.clientWidth, 1600);
+    mosaicHeight = Math.min(mosaicWidth * 0.75, 1200);
     gridCols = Math.floor(mosaicWidth / tileSize);
     gridRows = Math.floor(mosaicHeight / tileSize);
     positionTiles();
