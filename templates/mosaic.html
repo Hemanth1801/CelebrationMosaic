@@ -239,10 +239,17 @@ function positionTiles(settings = null) {
         }
     }
     
-    // Position tiles with high-quality scaling
+    // Shuffle positions randomly for user entries
+    const shuffledPositions = [...positions];
+    for (let i = shuffledPositions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledPositions[i], shuffledPositions[j]] = [shuffledPositions[j], shuffledPositions[i]];
+    }
+    
+    // Position tiles with high-quality scaling using shuffled positions
     tiles.forEach((tile, index) => {
-        if (index < positions.length) {
-            const pos = positions[index];
+        if (index < shuffledPositions.length) {
+            const pos = shuffledPositions[index];
             tile.style.position = 'absolute';
             tile.style.left = pos.x + 'px';
             tile.style.top = pos.y + 'px';
@@ -273,12 +280,17 @@ function positionTiles(settings = null) {
         }
     });
     
-    // Fill remaining positions with empty tiles (for manual mode or when we have fewer entries than grid cells)
+    // Fill remaining positions with empty tiles using original ordered positions
     const totalPositions = gridCols * gridRows;
     if (totalPositions > tiles.length) {
-        for (let i = tiles.length; i < totalPositions; i++) {
-            if (i < positions.length) {
-                const pos = positions[i];
+        // Use positions that weren't taken by user entries for empty tiles
+        const usedPositions = new Set(shuffledPositions.slice(0, tiles.length).map(p => `${p.row}-${p.col}`));
+        
+        for (let i = 0; i < positions.length; i++) {
+            const pos = positions[i];
+            const posKey = `${pos.row}-${pos.col}`;
+            
+            if (!usedPositions.has(posKey)) {
                 const emptyTile = document.createElement('div');
                 emptyTile.className = 'photo-tile empty-tile';
                 emptyTile.style.position = 'absolute';

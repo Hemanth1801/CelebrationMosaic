@@ -14,5 +14,8 @@
       "emoji": "🚀",
       "label": "Rocket"
     }
-  ]
+  ],
+  "grid_mode": "manual",
+  "grid_rows": 3,
+  "grid_cols": 2
 }
