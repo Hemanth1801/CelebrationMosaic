@@ -152,5 +152,19 @@
     "message": "hheeh",
     "symbol": "diya.png",
     "timestamp": "2025-08-31T19:13:38.974564"
+  },
+  {
+    "id": "c3f79f9e-8dc0-4fef-83e3-0c6a067d74ea",
+    "name": "hemanth",
+    "message": "hey myan",
+    "symbol": "diya.png",
+    "timestamp": "2025-08-31T19:18:52.673422"
+  },
+  {
+    "id": "62c6734d-dcd9-4174-bf96-a4ebd3067f32",
+    "name": "vamsi",
+    "message": "this is the best Diwali",
+    "symbol": "cracker.png",
+    "timestamp": "2025-08-31T19:20:22.300075"
   }
 ]
