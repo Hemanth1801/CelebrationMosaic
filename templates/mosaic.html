@@ -46,10 +46,10 @@
 
 <script>
 // Photo Mosaic Variables
-let minTileSize = 140; // Minimum tile size to match CSS
+let minTileSize = 120; // Reasonable minimum tile size
 let tileSize = 150; // Default tile size for better text readability
-let mosaicWidth = 1200;  // Larger mosaic width to fit more tiles
-let mosaicHeight = 900; // Larger mosaic height
+let maxMosaicWidth = 1000;  // Maximum mosaic width to fit on screen
+let maxMosaicHeight = 700; // Maximum mosaic height
 let gridCols = 0;
 let gridRows = 0;
 let refreshInterval;
@@ -121,29 +121,35 @@ async function calculateOptimalGrid(numEntries, settings) {
             }
             
             // Calculate grid dimensions based on number of entries
-            // Try to maintain logo aspect ratio (4:3)
-            const aspectRatio = mosaicWidth / mosaicHeight;
+            // Try to maintain reasonable aspect ratio (4:3)
+            const aspectRatio = 4/3;
             
             // Find the best grid size for the number of entries
-            let bestCols = 1, bestRows = 1;
-            let minWaste = Infinity;
+            let bestCols = Math.ceil(Math.sqrt(numEntries * aspectRatio));
+            let bestRows = Math.ceil(numEntries / bestCols);
             
-            const maxCols = Math.ceil(Math.sqrt(numEntries * aspectRatio)) + 5;
+            // Ensure we don't exceed reasonable limits
+            const maxCols = Math.min(Math.ceil(Math.sqrt(numEntries * aspectRatio)) + 2, 12);
+            const maxRows = Math.min(Math.ceil(numEntries / maxCols) + 2, 10);
+            
+            let minWaste = Infinity;
             
             // Break calculation into chunks to avoid blocking
             let currentCol = 1;
             const calculateChunk = () => {
                 const endCol = Math.min(currentCol + 5, maxCols + 1);
                 
-                for (let cols = currentCol; cols < endCol; cols++) {
+                for (let cols = currentCol; cols < endCol && cols <= maxCols; cols++) {
                     const rows = Math.ceil(numEntries / cols);
+                    if (rows > maxRows) continue;
+                    
                     const totalCells = cols * rows;
                     const waste = totalCells - numEntries;
                     const currentRatio = cols / rows;
                     const ratioError = Math.abs(currentRatio - aspectRatio);
                     
                     // Prefer grids closer to target aspect ratio with less waste
-                    const score = waste + (ratioError * 10);
+                    const score = waste + (ratioError * 5);
                     
                     if (score < minWaste) {
                         minWaste = score;
@@ -177,12 +183,12 @@ function setupMosaicGrid() {
 }
 
 async function setupDefaultGrid() {
-    // Use fixed resolution even when background image fails
+    // Use viewport-appropriate sizing
     try {
         const grid = await calculateOptimalGrid(totalEntries, null);
         gridCols = grid.cols;
         gridRows = grid.rows;
-        tileSize = Math.min(mosaicWidth / gridCols, mosaicHeight / gridRows);
+        tileSize = Math.max(Math.min(maxMosaicWidth / gridCols, maxMosaicHeight / gridRows), minTileSize);
         await positionTiles();
     } catch (error) {
         console.error('Error setting up default grid:', error);
@@ -205,15 +211,20 @@ async function positionTiles(settings = null) {
     gridCols = optimalGrid.cols;
     gridRows = optimalGrid.rows;
     
-    // Calculate tile size to fit fixed mosaic resolution but respect minimum
-    const calculatedSize = Math.min(mosaicWidth / gridCols, mosaicHeight / gridRows);
+    // Calculate tile size to fit viewport but respect minimum
+    const calculatedSize = Math.min(maxMosaicWidth / gridCols, maxMosaicHeight / gridRows);
     tileSize = Math.max(calculatedSize, minTileSize);
+    
+    // If tiles are still too small, reduce grid size
+    if (tileSize < minTileSize) {
+        tileSize = minTileSize;
+    }
     
     // Adjust actual mosaic size to accommodate the grid perfectly
     const actualWidth = gridCols * tileSize;
     const actualHeight = gridRows * tileSize;
     
-    console.log(`Grid: ${gridCols}x${gridRows}, Tile Size: ${tileSize}px, Mosaic: ${actualWidth}x${actualHeight}px`);
+    console.log(`Grid: ${gridCols}x${gridRows}, Tile Size: ${tileSize}px, Mosaic: ${actualWidth}x${actualHeight}px, Entries: ${totalEntries}`);
     
     // Apply grid styles immediately
     requestAnimationFrame(() => {
