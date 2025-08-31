@@ -266,6 +266,34 @@ footer {
     }
 }
 
+/* New tile falling animation from center to grid position */
+@keyframes fallToPosition {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+        left: 50% !important;
+        top: 50% !important;
+        z-index: 1001;
+    }
+    25% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.2);
+        left: 50% !important;
+        top: 50% !important;
+    }
+    100% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+        left: var(--final-left) !important;
+        top: var(--final-top) !important;
+    }
+}
+
+.tile-falling {
+    animation: fallToPosition 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    position: absolute !important;
+}
+
 .mosaic-tile {
     animation: fadeInUp 0.5s ease forwards;
 }

@@ -5,6 +5,12 @@
 {% block content %}
 <div class="photo-mosaic-container">
     <div class="container-fluid py-3">
+        <!-- Add quick navigation -->
+        <div class="text-center mb-3">
+            <a href="{{ url_for('index') }}" class="btn btn-primary me-2">🎊 Add Another Entry</a>
+            <a href="{{ url_for('admin') }}" class="btn btn-outline-secondary">⚙️ Admin</a>
+        </div>
+        
         <div class="photo-mosaic-wrapper" id="photoMosaicWrapper">
             <div id="photoMosaicGrid" class="photo-mosaic-grid">
                 {% if entries %}
@@ -51,6 +57,19 @@ let currentLogoUrl = '';
 document.addEventListener('DOMContentLoaded', function() {
     initializePhotoMosaic();
     initializeTooltips();
+    
+    // Check if we should animate newest tile from URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const shouldAnimate = urlParams.get('animate') === 'true';
+    if (shouldAnimate) {
+        // Clear the URL parameter
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Trigger animation after brief delay to ensure tiles are positioned
+        setTimeout(() => {
+            triggerNewestTileAnimation();
+        }, 500);
+    }
 });
 
 function initializeTooltips() {
@@ -362,9 +381,14 @@ function getEntryPositions(entryCount, totalPositions) {
     return savedPositions;
 }
 
-function updatePhotoMosaicGrid(entries, settings = null) {
+function updatePhotoMosaicGrid(entries, settings = null, animateNewest = false) {
     const grid = document.getElementById('photoMosaicGrid');
     if (!grid) return;
+    
+    // Store previous entry count to detect new entries
+    const previousTiles = grid.querySelectorAll('.photo-tile');
+    const hadEntries = previousTiles.length > 0;
+    const isNewEntry = hadEntries && entries.length > previousTiles.length;
     
     // Clear existing tiles (keep the grid structure)
     const existingTiles = grid.querySelectorAll('.photo-tile, .empty-tile');
@@ -406,6 +430,11 @@ function updatePhotoMosaicGrid(entries, settings = null) {
             </div>
         `;
         
+        // Mark newest tile for animation if it's a new entry
+        if ((isNewEntry && index === entries.length - 1) || (animateNewest && index === entries.length - 1)) {
+            tile.classList.add('newest-tile');
+        }
+        
         grid.appendChild(tile);
     });
     
@@ -413,6 +442,12 @@ function updatePhotoMosaicGrid(entries, settings = null) {
     setTimeout(() => {
         positionTiles(settings);
         initializeTooltips();
+        
+        // Trigger animation for newest tile
+        const newestTile = grid.querySelector('.newest-tile');
+        if (newestTile && (isNewEntry || animateNewest)) {
+            animateNewTile(newestTile);
+        }
     }, 100);
     
     // Update counter
@@ -422,6 +457,36 @@ function updatePhotoMosaicGrid(entries, settings = null) {
             ? (settings.grid_rows || 10) * (settings.grid_cols || 12)
             : entries.length;
         badge.textContent = `${entries.length}/${totalTiles} tiles`;
+    }
+}
+
+function animateNewTile(tile) {
+    // Store the final position
+    const finalLeft = tile.style.left;
+    const finalTop = tile.style.top;
+    
+    // Add animation class and start from center
+    tile.classList.add('tile-falling');
+    
+    // After animation completes, clean up
+    setTimeout(() => {
+        tile.classList.remove('tile-falling', 'newest-tile');
+        tile.style.left = finalLeft;
+        tile.style.top = finalTop;
+    }, 1200);
+    
+    // Set final position as CSS custom properties for animation
+    tile.style.setProperty('--final-left', finalLeft);
+    tile.style.setProperty('--final-top', finalTop);
+}
+
+function triggerNewestTileAnimation() {
+    // Find all tiles and animate the last one (newest)
+    const tiles = document.querySelectorAll('.photo-tile');
+    if (tiles.length > 0) {
+        const newestTile = tiles[tiles.length - 1];
+        newestTile.classList.add('newest-tile');
+        animateNewTile(newestTile);
     }
 }
 
