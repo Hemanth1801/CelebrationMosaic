@@ -32,7 +32,7 @@
                     <div class="display-1 mb-3 text-white-50">🎊</div>
                     <h3 class="text-white">Building photo mosaic...</h3>
                     <p class="text-white-50">Waiting for celebration tiles to appear</p>
-                    <p class="text-white-50 small">Auto-refreshing every 10 seconds</p>
+                    <p class="text-white-50 small">Updates automatically when new entries arrive</p>
                 </div>
                 {% endif %}
             </div>
@@ -51,6 +51,7 @@ let gridCols = 0;
 let gridRows = 0;
 let refreshInterval;
 let totalEntries = 0;
+let lastEntryCount = 0;
 
 // Initialize photo mosaic
 document.addEventListener('DOMContentLoaded', function() {
@@ -67,8 +68,8 @@ function initializePhotoMosaic() {
     loadCurrentLogo();
     setupMosaicGrid();
     
-    // Start auto-refresh
-    refreshInterval = setInterval(refreshMosaic, 10000);
+    // Check for new entries every 3 seconds (but only refresh if count changed)
+    refreshInterval = setInterval(checkForNewEntries, 3000);
 }
 
 function loadCurrentLogo() {
@@ -308,32 +309,68 @@ function positionTiles(settings = null) {
     }
 }
 
-function refreshMosaic() {
-    // Refresh both entries and logo settings
-    Promise.all([
-        fetch('/api/entries').then(response => response.json()),
-        fetch('/api/admin-settings').then(response => response.json())
-    ])
-    .then(([entries, settings]) => {
-        // Check if logo has changed
-        const currentLogoUrl = backgroundImage ? backgroundImage.src : '';
-        const newLogoUrl = `/static/${settings.logo_filename}?t=${Date.now()}`;
-        
-        if (!currentLogoUrl.includes(settings.logo_filename)) {
-            // Logo changed, reload it
-            loadBackgroundImage(newLogoUrl);
-        }
-        
-        updatePhotoMosaicGrid(entries, settings);
-    })
-    .catch(error => {
-        console.error('Error refreshing mosaic:', error);
-        // Fallback to just entries
-        fetch('/api/entries')
+function checkForNewEntries() {
+    // Check entry count first to avoid unnecessary refreshes
+    fetch('/api/entries')
+        .then(response => response.json())
+        .then(entries => {
+            const currentCount = entries.length;
+            
+            // Only refresh if entry count changed or it's the first load
+            if (currentCount !== lastEntryCount || lastEntryCount === 0) {
+                lastEntryCount = currentCount;
+                refreshMosaic(entries);
+            }
+        })
+        .catch(error => {
+            console.error('Error checking entries:', error);
+        });
+}
+
+function refreshMosaic(entries = null) {
+    // If entries not provided, fetch them along with settings
+    if (entries === null) {
+        Promise.all([
+            fetch('/api/entries').then(response => response.json()),
+            fetch('/api/admin-settings').then(response => response.json())
+        ])
+        .then(([entries, settings]) => {
+            // Check if logo has changed
+            const currentLogoUrl = backgroundImage ? backgroundImage.src : '';
+            const newLogoUrl = `/static/${settings.logo_filename}?t=${Date.now()}`;
+            
+            if (!currentLogoUrl.includes(settings.logo_filename)) {
+                // Logo changed, reload it
+                loadBackgroundImage(newLogoUrl);
+            }
+            
+            updatePhotoMosaicGrid(entries, settings);
+        })
+        .catch(error => {
+            console.error('Error refreshing mosaic:', error);
+        });
+    } else {
+        // Use provided entries and fetch only settings
+        fetch('/api/admin-settings')
             .then(response => response.json())
-            .then(data => updatePhotoMosaicGrid(data))
-            .catch(err => console.error('Error fetching entries:', err));
-    });
+            .then(settings => {
+                // Check if logo has changed
+                const currentLogoUrl = backgroundImage ? backgroundImage.src : '';
+                const newLogoUrl = `/static/${settings.logo_filename}?t=${Date.now()}`;
+                
+                if (!currentLogoUrl.includes(settings.logo_filename)) {
+                    // Logo changed, reload it
+                    loadBackgroundImage(newLogoUrl);
+                }
+                
+                updatePhotoMosaicGrid(entries, settings);
+            })
+            .catch(error => {
+                console.error('Error fetching settings:', error);
+                // Fallback to just entries without settings
+                updatePhotoMosaicGrid(entries);
+            });
+    }
 }
 
 function getEntryPositions(entryCount, totalPositions) {
@@ -410,7 +447,7 @@ function updatePhotoMosaicGrid(entries, settings = null) {
             <div class="display-1 mb-3 text-white-50">🎊</div>
             <h3 class="text-white">Building photo mosaic...</h3>
             <p class="text-white-50">Waiting for celebration tiles to appear</p>
-            <p class="text-white-50 small">Auto-refreshing every 10 seconds</p>
+            <p class="text-white-50 small">Updates automatically when new entries arrive</p>
         `;
         grid.appendChild(emptyMessage);
         return;
