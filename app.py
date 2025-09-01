@@ -33,6 +33,21 @@ def save_data(data):
     with open('data.json', 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
+def get_available_positions():
+    """Get a list of available grid positions"""
+    settings = load_admin_settings()
+    total_positions = settings['grid_rows'] * settings['grid_cols']
+    data = load_data()
+    
+    # Create set of all used positions
+    used_positions = set()
+    for entry in data:
+        if 'position' in entry:
+            used_positions.add(entry['position'])
+    
+    # Return list of available positions
+    return [pos for pos in range(total_positions) if pos not in used_positions]
+
 def load_admin_settings():
     """Load admin settings from admin_settings.json"""
     default_settings = {
@@ -98,13 +113,24 @@ def submit():
             flash('Invalid symbol selected!', 'error')
             return redirect(url_for('index'))
         
-        # Create new entry with unique ID for position tracking
+        # Get available positions
+        available_positions = get_available_positions()
+        if not available_positions:
+            flash('The mosaic is currently full!', 'error')
+            return redirect(url_for('index'))
+            
+        # Randomly select a position from available positions
+        import random
+        position = random.choice(available_positions)
+        
+        # Create new entry with unique ID and assigned position
         new_entry = {
-            'id': str(uuid.uuid4()),  # Unique identifier for position consistency
+            'id': f'tile-{position + 1}',  # Position-based ID for better tracking
             'name': name,
             'message': message,
             'symbol': symbol,
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat(),
+            'position': position  # Store the assigned position
         }
         
         # Load existing data and add new entry
@@ -130,10 +156,14 @@ def submit():
 def mosaic():
     """Render the mosaic display"""
     try:
-        data = load_data()
         settings = load_admin_settings()
+        data = load_data()
+        # Calculate total needed tiles based on grid
+        total_tiles = settings['grid_rows'] * settings['grid_cols']
+        # Take only the most recent entries that match the grid size
+        entries = data[-total_tiles:] if len(data) >= total_tiles else data
         return render_template('mosaic.html', 
-                             entries=data, 
+                             entries=entries, 
                              logo_filename=settings['logo_filename'])
     except Exception as e:
         logging.error(f"Error in mosaic: {e}")

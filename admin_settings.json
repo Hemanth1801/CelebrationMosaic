@@ -1,6 +1,6 @@
 {
-  "logo_filename": "logo_20250831_102130.jpg",
-  "max_entries": 50,
+  "logo_filename": "logo_20250902_014137.png",
+  "max_entries": 100,
   "symbols": [
     {
       "filename": "diya.png",
@@ -17,5 +17,5 @@
   ],
   "grid_mode": "manual",
   "grid_rows": 5,
-  "grid_cols": 5
+  "grid_cols": 15
 }

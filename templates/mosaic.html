@@ -1,6 +1,35 @@
 {% extends "base.html" %}
 
-{% block title %}Photo Mosaic - Celebration Display{% endblock %}
+{% block title %}Pho// Photo Mosaic Variables
+let tileSize = 50; // Original tile size
+let mosaicWidth = 800;  // Initial mosaic width
+let mosaicHeight = 600; // Initial mosaic height
+let gridCols = 0;
+let gridRows = 0;
+let refreshInterval;
+let totalEntries = 0;
+let lastEntryCount = 0;
+let currentLogoUrl = '';
+
+// Function to get logo dimensions and set mosaic size
+async function setMosaicDimensions(logoUrl) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = function() {
+            const logoAspectRatio = this.width / this.height;
+            // Keep a fixed width of 800px and calculate height based on aspect ratio
+            mosaicWidth = 800;
+            mosaicHeight = Math.round(mosaicWidth / logoAspectRatio);
+            resolve();
+        };
+        img.onerror = function() {
+            // If logo fails to load, keep default dimensions
+            console.warn('Failed to load logo, using default dimensions');
+            resolve();
+        };
+        img.src = logoUrl;
+    });
+}- Celebration Display{% endblock %}
 
 {% block content %}
 <div class="photo-mosaic-container">
@@ -18,7 +47,7 @@
             <div id="photoMosaicGrid" class="photo-mosaic-grid">
                 {% if entries %}
                     {% for entry in entries %}
-                    <div class="photo-tile" data-entry-id="{{ loop.index }}" 
+                    <div class="photo-tile" data-entry-id="{{ entry.id }}" data-position="{{ entry.position }}"
                          data-bs-toggle="tooltip" data-bs-title="{{ entry.name }}: {{ entry.message }}">
                         <div class="tile-bg-symbol">
                             <img src="{{ url_for('static', filename='symbols/' + entry.symbol) }}" 
@@ -47,8 +76,8 @@
 <script>
 // Photo Mosaic Variables
 let tileSize = 50; // Original tile size
-let mosaicWidth = 800;  // Fixed mosaic width
-let mosaicHeight = 600; // Fixed mosaic height
+let mosaicWidth = 1200;  // Fixed mosaic width
+let mosaicHeight = 1000; // Fixed mosaic height
 let gridCols = 0;
 let gridRows = 0;
 let refreshInterval;
@@ -78,20 +107,23 @@ function initializePhotoMosaic() {
     refreshInterval = setInterval(checkForNewEntries, 3000);
 }
 
-function loadLogoOverlay() {
-    // Fetch current admin settings to get the latest logo
-    fetch('/api/admin-settings')
-        .then(response => response.json())
-        .then(settings => {
-            const logoUrl = `/static/${settings.logo_filename}?t=${Date.now()}`;
-            updateLogoOverlay(logoUrl);
-        })
-        .catch(error => {
-            console.error('Error fetching admin settings:', error);
-            // Fallback to template value
-            const logoUrl = '{{ url_for("static", filename=logo_filename) }}?t=' + Date.now();
-            updateLogoOverlay(logoUrl);
-        });
+async function loadLogoOverlay() {
+    try {
+        // Fetch current admin settings to get the latest logo
+        const response = await fetch('/api/admin-settings');
+        const settings = await response.json();
+        const logoUrl = `/static/${settings.logo_filename}?t=${Date.now()}`;
+        await setMosaicDimensions(logoUrl);
+        updateLogoOverlay(logoUrl);
+        setupDefaultGrid(); // Recalculate grid with new dimensions
+    } catch (error) {
+        console.error('Error fetching admin settings:', error);
+        // Fallback to template value
+        const logoUrl = '{{ url_for("static", filename=logo_filename) }}?t=' + Date.now();
+        await setMosaicDimensions(logoUrl);
+        updateLogoOverlay(logoUrl);
+        setupDefaultGrid(); // Recalculate grid with new dimensions
+    }
 }
 
 function updateLogoOverlay(logoUrl) {
@@ -167,10 +199,18 @@ async function calculateOptimalGrid(numEntries, settings) {
 
 function setupMosaicGrid() {
     const wrapper = document.getElementById('photoMosaicWrapper');
+    const grid = document.getElementById('photoMosaicGrid');
     wrapper.style.position = 'relative';
     wrapper.style.width = '100%';
     wrapper.style.maxWidth = '1200px';
     wrapper.style.margin = '0 auto';
+    
+    // Set grid dimensions based on calculated mosaic size
+    if (grid) {
+        grid.style.width = mosaicWidth + 'px';
+        grid.style.height = mosaicHeight + 'px';
+        grid.style.position = 'relative';
+    }
 }
 
 async function setupDefaultGrid() {
@@ -255,6 +295,15 @@ async function createGridPositions(gridRows, gridCols, tileSize) {
     });
 }
 
+function checkTileOverlap(tile1Rect, tile2Rect) {
+    return !(
+        tile1Rect.right <= tile2Rect.left ||
+        tile1Rect.left >= tile2Rect.right ||
+        tile1Rect.bottom <= tile2Rect.top ||
+        tile1Rect.top >= tile2Rect.bottom
+    );
+}
+
 async function positionTilesInBatches(tiles, positions, entryPositions) {
     const batchSize = 5;
     const tilesArray = Array.from(tiles);
@@ -264,21 +313,29 @@ async function positionTilesInBatches(tiles, positions, entryPositions) {
             requestAnimationFrame(() => {
                 const batch = tilesArray.slice(i, i + batchSize);
                 
-                batch.forEach((tile, batchIndex) => {
-                    const index = i + batchIndex;
+                batch.forEach((tile) => {
                     const entryId = tile.getAttribute('data-entry-id');
-                    const positionIndex = entryPositions[entryId] || entryPositions[index] || 0;
+                    const storedPosition = parseInt(tile.getAttribute('data-position'));
                     
-                    if (positionIndex < positions.length) {
-                        const pos = positions[positionIndex];
+                    if (!isNaN(storedPosition) && storedPosition >= 0 && storedPosition < positions.length) {
+                        // Calculate row and column from position
+                        const row = Math.floor(storedPosition / gridCols);
+                        const col = storedPosition % gridCols;
+                        
+                        // Calculate x and y coordinates
+                        const x = col * tileSize;
+                        const y = row * tileSize;
+                        
+                        // Position the tile
                         tile.style.position = 'absolute';
-                        tile.style.left = pos.x + 'px';
-                        tile.style.top = pos.y + 'px';
+                        tile.style.left = x + 'px';
+                        tile.style.top = y + 'px';
                         tile.style.width = tileSize + 'px';
                         tile.style.height = tileSize + 'px';
                         
-                        // Simple tile styling without color analysis
-                        tile.style.transform = 'translateZ(0)'; // Force hardware acceleration
+                        console.log(`Tile ${entryId} positioned at (${x}, ${y}), grid position: ${storedPosition}`);
+                    } else {
+                        console.warn(`Invalid position for tile ${entryId}: ${storedPosition}`);
                     }
                 });
                 
@@ -403,61 +460,21 @@ function refreshMosaic(entries = null, animateNew = false) {
 async function getEntryPositions(entryCount, totalPositions) {
     return new Promise((resolve) => {
         requestAnimationFrame(() => {
-            // Get existing position assignments from localStorage
-            let savedPositions = {};
-            try {
-                savedPositions = JSON.parse(localStorage.getItem('entryPositions') || '{}');
-            } catch (e) {
-                savedPositions = {};
-            }
+            const entryPositions = {};
+            // Get all current tiles
+            const currentTiles = Array.from(document.querySelectorAll('.photo-tile'));
             
-            // Create shuffled position pool if it doesn't exist
-            let availablePositions = [];
-            try {
-                availablePositions = JSON.parse(localStorage.getItem('availablePositions') || '[]');
-            } catch (e) {
-                availablePositions = [];
-            }
-            
-            // Initialize position pool if empty or wrong size
-            if (availablePositions.length === 0 || availablePositions.length !== totalPositions) {
-                availablePositions = Array.from({length: totalPositions}, (_, i) => i);
-                // Shuffle the available positions
-                for (let i = availablePositions.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [availablePositions[i], availablePositions[j]] = [availablePositions[j], availablePositions[i]];
-                }
-                localStorage.setItem('availablePositions', JSON.stringify(availablePositions));
-            }
-            
-            // Assign positions to entries that don't have them
-            const currentEntryIds = Array.from(document.querySelectorAll('.photo-tile')).map(tile => 
-                tile.getAttribute('data-entry-id') || String(Array.from(tile.parentNode.children).indexOf(tile))
-            );
-            
-            let nextPositionIndex = 0;
-            currentEntryIds.forEach((entryId, index) => {
-                if (!(entryId in savedPositions)) {
-                    // Find next available position
-                    while (nextPositionIndex < availablePositions.length && 
-                           Object.values(savedPositions).includes(availablePositions[nextPositionIndex])) {
-                        nextPositionIndex++;
-                    }
-                    
-                    if (nextPositionIndex < availablePositions.length) {
-                        savedPositions[entryId] = availablePositions[nextPositionIndex];
-                        nextPositionIndex++;
-                    } else {
-                        // Fallback to index if we run out of positions
-                        savedPositions[entryId] = index % totalPositions;
-                    }
+            // Create a positions map from the data-position attributes
+            const positions = {};
+            currentTiles.forEach(tile => {
+                const entryId = tile.getAttribute('data-entry-id');
+                const position = parseInt(tile.getAttribute('data-position'));
+                if (!isNaN(position) && position >= 0 && position < totalPositions) {
+                    positions[entryId] = position;
                 }
             });
             
-            // Save updated positions
-            localStorage.setItem('entryPositions', JSON.stringify(savedPositions));
-            
-            resolve(savedPositions);
+            resolve(positions);
         });
     });
 }
@@ -492,9 +509,9 @@ function updatePhotoMosaicGrid(entries, settings = null, animateNewest = false) 
     entries.forEach((entry, index) => {
         const tile = document.createElement('div');
         tile.className = 'photo-tile';
-        // Use entry ID if available, otherwise fall back to index
         const entryId = entry.id || String(index);
         tile.setAttribute('data-entry-id', entryId);
+        tile.setAttribute('data-position', entry.position);
         tile.setAttribute('data-bs-toggle', 'tooltip');
         tile.setAttribute('data-bs-title', `${escapeHtml(entry.name)}: ${escapeHtml(entry.message)}`);
         
