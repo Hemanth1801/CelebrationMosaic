@@ -892,12 +892,12 @@ function movePopupToGrid(popupTile, overlay, entry) {
                 newestGridTile.classList.add('auto-hover');
                 console.log('Added hover effect');
                 
-                // Remove hover effect after 3 seconds
+                // Remove hover effect after 1.5 seconds
                 setTimeout(() => {
                     newestGridTile.classList.remove('auto-hover');
                     console.log('Removed hover effect');
-                }, 3000);
-            }, 2500); // Match the popup duration
+                }, 500);
+            }, 500); // auto hover timing
         }
     });
 }
