@@ -1,0 +1,393 @@
+/* ======================
+   Tile Popup Animations
+   ====================== */
+
+@keyframes celebrationPopup {
+    0% {
+        transform: translate(-50%, -50%) scale(0) rotate(-180deg);
+        opacity: 0;
+    }
+    20% {
+        transform: translate(-50%, -50%) scale(3.7) rotate(-30deg);
+        opacity: 1;
+    }
+    35% {
+        transform: translate(-50%, -50%) scale(3.4) rotate(-8deg);
+        opacity: 1;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(3.2) rotate(6deg);
+        opacity: 1;
+    }
+    65% {
+        transform: translate(-50%, -50%) scale(3.1) rotate(-3deg);
+        opacity: 1;
+    }
+    80% {
+        transform: translate(-50%, -50%) scale(3.05) rotate(1deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(3) rotate(0deg);
+        opacity: 1;
+    }
+}
+
+/* Falling animation from popup to grid position */
+@keyframes fallToPosition {
+    0% {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(1);
+        width: 400px;
+        height: 400px;
+        z-index: 9999;
+        opacity: 1;
+        border-radius: 20px;
+    }
+    20% {
+        transform: translate(-50%, -30%) scale(0.9) rotate(10deg);
+    }
+    60% {
+        transform: translate(-25%, -10%) scale(0.6) rotate(-5deg);
+    }
+    100% {
+        position: absolute;
+        left: var(--final-left);
+        top: var(--final-top);
+        transform: translate(0, 0) scale(1);
+        width: var(--final-width);
+        height: var(--final-height);
+        z-index: 1;
+        opacity: 1;
+        border-radius: 4px;
+    }
+}
+
+/* ======================
+   New Tile Animations
+   ====================== */
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes sparkle {
+    0%, 100% { 
+        filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.8))
+               drop-shadow(0 0 6px rgba(255, 215, 0, 0.6)); 
+    }
+    50% { 
+        filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.9))
+               drop-shadow(0 0 12px rgba(255, 215, 0, 0.8)); 
+    }
+}
+
+@keyframes flame-border {
+    0%, 100% {
+        border-image: linear-gradient(45deg, #ff4800, #ffb700, #ff4800) 1;
+        filter: drop-shadow(0 0 4px rgba(255, 72, 0, 0.5));
+    }
+    50% {
+        border-image: linear-gradient(45deg, #ffb700, #ff4800, #ffb700) 1;
+        filter: drop-shadow(0 0 8px rgba(255, 183, 0, 0.7));
+    }
+}
+
+@keyframes glow-pulse {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(255, 204, 0, 0.6),
+                   0 0 20px rgba(255, 204, 0, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(255, 204, 0, 0.8),
+                   0 0 40px rgba(255, 204, 0, 0.5);
+    }
+}
+
+@keyframes diwali-lights {
+    0%, 100% {
+        background: radial-gradient(circle at top left, transparent 98%, #ffb700),
+                    radial-gradient(circle at top right, transparent 98%, #ff4800),
+                    radial-gradient(circle at bottom left, transparent 98%, #ffdb4d),
+                    radial-gradient(circle at bottom right, transparent 98%, #ff8c00);
+        filter: drop-shadow(0 0 4px rgba(255, 183, 0, 0.6));
+    }
+    50% {
+        background: radial-gradient(circle at top right, transparent 98%, #ffb700),
+                    radial-gradient(circle at top left, transparent 98%, #ff4800),
+                    radial-gradient(circle at bottom right, transparent 98%, #ffdb4d),
+                    radial-gradient(circle at bottom left, transparent 98%, #ff8c00);
+        filter: drop-shadow(0 0 8px rgba(255, 183, 0, 0.8));
+    }
+}
+
+/* ======================
+   Celebration Animations
+   ====================== */
+
+@keyframes confetti-fall {
+    0% {
+        transform: translateY(-100vh) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+@keyframes cracker-burst {
+    0% {
+        transform: scale(0) rotate(0deg);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.5) rotate(180deg);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(3) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+@keyframes firework-burst {
+    0% {
+        transform: scale(0);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+@keyframes sparkle-rain-fall {
+    0% {
+        transform: translateY(-50vh) translateX(var(--x-offset)) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) translateX(calc(var(--x-offset) * -1)) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+@keyframes flower-burst {
+    0% {
+        transform: scale(0) rotate(0deg);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(2) rotate(180deg);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+@keyframes rangoli-pattern {
+    0% {
+        transform: scale(0) rotate(0deg);
+        opacity: 0;
+    }
+    25% {
+        transform: scale(1) rotate(90deg);
+        opacity: 1;
+    }
+    75% {
+        transform: scale(1) rotate(270deg);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* ======================
+   Animation Classes
+   ====================== */
+
+/* Popup animations */
+.celebration-popup {
+    animation: celebrationPopup 2s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+.tile-falling {
+    animation: fallToPosition 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+/* New tile animations */
+.mosaic-tile {
+    animation: fadeInUp 0.5s ease forwards;
+}
+
+.photo-tile.newest-tile[data-animation="sparkle"]::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    animation: sparkle 2s infinite;
+    pointer-events: none;
+    z-index: 3;
+}
+
+.photo-tile.newest-tile[data-animation="flame"]::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px solid transparent;
+    animation: flame-border 2s infinite;
+    pointer-events: none;
+    z-index: 3;
+}
+
+.photo-tile.newest-tile[data-animation="glow"]::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: 8px;
+    animation: glow-pulse 2s infinite;
+    pointer-events: none;
+    z-index: 3;
+}
+
+.photo-tile.newest-tile[data-animation="diwali"]::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    animation: diwali-lights 3s infinite;
+    pointer-events: none;
+    z-index: 3;
+    border-radius: 8px;
+}
+
+/* Celebration elements */
+.confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    background: #f0f;
+    animation: confetti-fall 3s linear forwards;
+    pointer-events: none;
+    z-index: 10000;
+}
+
+.diwali-cracker {
+    position: fixed;
+    width: 20px;
+    height: 20px;
+    background: radial-gradient(circle, #ffcc00, #ff6600);
+    border-radius: 50%;
+    animation: cracker-burst 1.5s ease-out forwards;
+    pointer-events: none;
+    z-index: 10000;
+    box-shadow: 0 0 20px #ffcc00;
+}
+
+.firework {
+    position: fixed;
+    width: 4px;
+    height: 4px;
+    background: #fff;
+    border-radius: 50%;
+    animation: firework-burst 1s ease-out forwards;
+    pointer-events: none;
+    z-index: 10000;
+    box-shadow: 0 0 10px currentColor;
+}
+
+.sparkle {
+    position: fixed;
+    width: 6px;
+    height: 6px;
+    background: #fff;
+    border-radius: 50%;
+    animation: sparkle-rain-fall 3s linear forwards;
+    pointer-events: none;
+    z-index: 10000;
+    box-shadow: 0 0 15px currentColor;
+}
+
+.flower {
+    position: fixed;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    animation: flower-burst 2s ease-out forwards;
+    pointer-events: none;
+    z-index: 10000;
+    box-shadow: 0 0 20px rgba(255, 183, 0, 0.8);
+    opacity: 0;
+}
+
+.rangoli {
+    position: fixed;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle at center, 
+        #ff4800 10%, 
+        #ffb700 30%, 
+        #ff4800 50%, 
+        #ffdb4d 70%, 
+        #ff8c00 90%
+    );
+    opacity: 0;
+    border-radius: 50%;
+    animation: rangoli-pattern 2s ease-out forwards;
+    pointer-events: none;
+    z-index: 10000;
+    box-shadow: 0 0 30px rgba(255, 183, 0, 0.6);
+}
+
+/* Overlay fade in */
+@keyframes fadeInOverlay {
+    to {
+        opacity: 1;
+    }
+}
+
+.celebration-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    animation: fadeInOverlay 0.5s ease forwards;
+}

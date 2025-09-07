@@ -8,14 +8,272 @@
     <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
     <script src="{{ url_for('static', filename='bootstrap.bundle.min.js') }}"></script>
 </head>
-<body>
+<body class="{{ body_class }}">
     <!-- Navigation removed for standalone operation -->
 
-    <main>
+    <header class="site-header" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 32px;">
+        <div style="font-weight: bold; font-size: 1.5rem; color: #ffcc00;">{{ admin_settings.header_text }}</div>
+        <div>
+            <img src="{{ url_for('static', filename=admin_settings.short_logo_filename) }}" alt="Short Logo" style="height:40px;">
+        </div>
+    </header>
+
+    <style>
+        :root {
+            {% if admin_settings.color_scheme %}
+                {% if request.endpoint == 'index' %}
+                    /* Submission page colors */
+                    --page-background: {{ admin_settings.color_scheme.submission_page.background }};
+                    --page-text: {{ admin_settings.color_scheme.submission_page.text }};
+                    --heading-text: {{ admin_settings.color_scheme.submission_page.heading_text }};
+                    --form-background: {{ admin_settings.color_scheme.submission_page.form_background }};
+                    --form-border: {{ admin_settings.color_scheme.submission_page.form_border }};
+                    --input-background: {{ admin_settings.color_scheme.submission_page.input_background }};
+                    --input-text: {{ admin_settings.color_scheme.submission_page.input_text }};
+                    --input-border: {{ admin_settings.color_scheme.submission_page.input_border }};
+                    --input-focus-border: {{ admin_settings.color_scheme.submission_page.input_focus_border }};
+                    --label-text: {{ admin_settings.color_scheme.submission_page.label_text }};
+                    --button-primary-bg: {{ admin_settings.color_scheme.submission_page.button_primary_bg }};
+                    --button-primary-text: {{ admin_settings.color_scheme.submission_page.button_primary_text }};
+                    --button-primary-hover-bg: {{ admin_settings.color_scheme.submission_page.button_primary_hover_bg }};
+                    --button-secondary-bg: {{ admin_settings.color_scheme.submission_page.button_secondary_bg }};
+                    --button-secondary-text: {{ admin_settings.color_scheme.submission_page.button_secondary_text }};
+                    --button-secondary-hover-bg: {{ admin_settings.color_scheme.submission_page.button_secondary_hover_bg }};
+                    --alert-success-bg: {{ admin_settings.color_scheme.submission_page.alert_success_bg }};
+                    --alert-success-text: {{ admin_settings.color_scheme.submission_page.alert_success_text }};
+                    --alert-error-bg: {{ admin_settings.color_scheme.submission_page.alert_error_bg }};
+                    --alert-error-text: {{ admin_settings.color_scheme.submission_page.alert_error_text }};
+                    --symbol-selector-bg: {{ admin_settings.color_scheme.submission_page.symbol_selector_bg }};
+                    --symbol-selector-border: {{ admin_settings.color_scheme.submission_page.symbol_selector_border }};
+                    --symbol-selector-active: {{ admin_settings.color_scheme.submission_page.symbol_selector_active }};
+                {% else %}
+                    /* Mosaic page colors */
+                    --page-background: {{ admin_settings.color_scheme.mosaic_page.background }};
+                    --page-text: {{ admin_settings.color_scheme.mosaic_page.text }};
+                    --tile-background: {{ admin_settings.color_scheme.mosaic_page.tile_background }};
+                    --tile-text: {{ admin_settings.color_scheme.mosaic_page.tile_text }};
+                    --tile-border: {{ admin_settings.color_scheme.mosaic_page.tile_border }};
+                {% endif %}
+            {% endif %}
+        }
+
+        /* Base styles */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+        body {
+            background-color: var(--page-background, #000000);
+            color: var(--page-text, #ffffff);
+            padding-top: 80px;
+            min-height: 100vh;
+        }
+        
+        /* Enable scrolling for entry and admin pages, but not mosaic */
+        body:not(.mosaic-page) {
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        /* Keep mosaic page fixed and full-screen */
+        body.mosaic-page {
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+
+        /* Header styles */
+        .site-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background-color: rgba(33, 37, 41, 0.95);
+            backdrop-filter: blur(5px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Form styles */
+        .submission-card {
+            background-color: var(--form-background, #1a1a1a);
+            border: 1px solid var(--form-border, #333333);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .submission-card .card-header {
+            background-color: var(--form-background, #1a1a1a);
+            border-bottom: 1px solid var(--form-border, #333333);
+            padding: 1.5rem 1rem;
+        }
+
+        .heading-text {
+            color: var(--heading-text, #ffcc00);
+            font-size: 2rem;
+            font-weight: bold;
+            text-transform: capitalize;
+        }
+
+        .subheading-text {
+            color: var(--label-text, #cccccc);
+            font-size: 1.1rem;
+            margin-top: 0.5rem;
+        }
+
+        .custom-label {
+            color: var(--label-text, #cccccc);
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .custom-input {
+            background-color: var(--input-background, #2a2a2a);
+            border: 1px solid var(--input-border, #404040);
+            color: var(--input-text, #ffffff);
+            border-radius: 6px;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+        }
+
+        .custom-input:focus {
+            background-color: var(--input-background, #2a2a2a);
+            border-color: var(--input-focus-border, #ffcc00);
+            box-shadow: 0 0 0 0.25rem rgba(255, 204, 0, 0.15);
+            color: var(--input-text, #ffffff);
+        }
+
+        .custom-input::placeholder {
+            color: var(--label-text, #cccccc);
+            opacity: 0.7;
+        }
+
+        .custom-form-text {
+            color: var(--label-text, #cccccc);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            opacity: 0.8;
+        }
+
+        .form-control {
+            background-color: var(--input-background, #2a2a2a);
+            border-color: var(--input-border, #404040);
+            color: var(--input-text, #ffffff);
+        }
+
+        .form-control:focus {
+            background-color: var(--input-background, #2a2a2a);
+            border-color: var(--input-focus-border, #ffcc00);
+            color: var(--input-text, #ffffff);
+            box-shadow: 0 0 0 0.25rem rgba(255, 204, 0, 0.25);
+        }
+
+        .form-text {
+            color: var(--label-text, #cccccc);
+        }
+
+        /* Button styles */
+        .submit-button {
+            background-color: var(--button-primary-bg, #ffcc00);
+            color: var(--button-primary-text, #000000);
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .submit-button:hover {
+            background-color: var(--button-primary-hover-bg, #ffd633);
+            color: var(--button-primary-text, #000000);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 204, 0, 0.2);
+        }
+
+        .submit-button .submit-icon {
+            margin-right: 8px;
+            font-size: 1.4rem;
+        }
+
+        /* Symbol selector styles */
+        .symbol-selector {
+            background-color: var(--symbol-selector-bg, #2a2a2a);
+            border: 1px solid var(--symbol-selector-border, #404040);
+            color: var(--label-text, #cccccc);
+            padding: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .symbol-selector:hover {
+            background-color: var(--input-background, #2a2a2a);
+            border-color: var(--input-focus-border, #ffcc00);
+        }
+
+        .btn-check:checked + .symbol-selector {
+            background-color: var(--symbol-selector-active, #ffcc00);
+            border-color: var(--symbol-selector-active, #ffcc00);
+            color: var(--button-primary-text, #000000);
+        }
+
+        .symbol-preview {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+        }
+
+        .symbol-label {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .btn-outline-primary:hover,
+        .btn-check:checked + .btn-outline-primary {
+            background-color: var(--button-primary-bg, #ffcc00);
+            color: var(--button-primary-text, #000000);
+            border-color: var(--button-primary-bg, #ffcc00);
+        }
+
+        /* Symbol selector styles */
+        .btn-check + .btn-outline-primary {
+            background-color: var(--symbol-selector-bg, #2a2a2a);
+            border-color: var(--symbol-selector-border, #404040);
+        }
+
+        .btn-check:checked + .btn-outline-primary {
+            background-color: var(--symbol-selector-active, #ffcc00);
+        }
+
+        /* Alert styles */
+        .alert-success {
+            background-color: var(--alert-success-bg, #28a745);
+            color: var(--alert-success-text, #ffffff);
+            border: none;
+        }
+
+        .alert-danger {
+            background-color: var(--alert-error-bg, #dc3545);
+            color: var(--alert-error-text, #ffffff);
+            border: none;
+        }
+
+        /* Mosaic specific styles */
+        .photo-tile {
+            background-color: var(--tile-background, #333333);
+            color: var(--tile-text, #ffffff);
+            border: 1px solid var(--tile-border, #ffcc00);
+        }
+    </style>
+
+    <main style="{% if request.endpoint == 'mosaic' %}height: calc(100vh - 80px); overflow: hidden;{% else %}min-height: calc(100vh - 80px);{% endif %}">
         <!-- Flash messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                <div class="container mt-3">
+                <div class="container mt-3" style="{% if request.endpoint == 'mosaic' %}position: absolute;{% endif %} top: 0; left: 0; right: 0; z-index: 1000;">
                     {% for category, message in messages %}
                         <div class="alert alert-{% if category == 'error' %}danger{% elif category == 'success' %}success{% else %}info{% endif %} alert-dismissible fade show" role="alert">
                             {{ message }}
@@ -29,9 +287,9 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="mt-5 py-4 border-top">
+    <footer style="display: none;">
         <div class="container text-center text-muted">
-            <p>&copy; 2025 Celebration Mosaic. Made with ❤️ using Flask & Bootstrap.</p>
+            <p>&copy; 2025 Diwali Celebrations.</p>
         </div>
     </footer>
 </body>

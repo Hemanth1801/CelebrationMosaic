@@ -32,19 +32,10 @@ async function setMosaicDimensions(logoUrl) {
 }- Celebration Display{% endblock %}
 
 {% block content %}
-<div class="photo-mosaic-container">
-    <div class="container-fluid py-3">
-        <!-- Add quick navigation -->
-        <div class="text-center mb-3">
-            <a href="{{ url_for('index') }}" class="btn btn-primary me-2">🎊 Add Another Entry</a>
-            <a href="{{ url_for('admin') }}" class="btn btn-outline-secondary me-2">⚙️ Admin</a>
-            <button onclick="startCelebration('confetti')" class="btn btn-outline-success btn-sm me-1">🎊 Confetti</button>
-            <button onclick="startCelebration('diwali')" class="btn btn-outline-warning btn-sm me-1">🪔 Diwali</button>
-            <button onclick="startCelebration('fireworks')" class="btn btn-outline-info btn-sm">🎆 Fireworks</button>
-        </div>
-        
-        <div class="photo-mosaic-wrapper" id="photoMosaicWrapper">
-            <div id="photoMosaicGrid" class="photo-mosaic-grid">
+<div class="photo-mosaic-container" style="height: 100%; width: 100%; margin: 0; padding: 0;">
+    <div class="container-fluid p-0" style="height: 100%; width: 100%;">
+        <div class="photo-mosaic-wrapper" id="photoMosaicWrapper" style="height: 100%; width: 100%; margin: 0; padding: 0;">
+            <div id="photoMosaicGrid" class="photo-mosaic-grid" style="height: 100%; width: 100%; margin: 0; padding: 0;">
                 {% if entries %}
                     {% for entry in entries %}
                     <div class="photo-tile" data-entry-id="{{ entry.id }}" data-position="{{ entry.position }}"
@@ -76,8 +67,8 @@ async function setMosaicDimensions(logoUrl) {
 <script>
 // Photo Mosaic Variables
 let tileSize = 50; // Original tile size
-let mosaicWidth = 1200;  // Fixed mosaic width
-let mosaicHeight = 1000; // Fixed mosaic height
+let mosaicWidth = window.innerWidth;  // Use full viewport width
+let mosaicHeight = window.innerHeight; // Use full viewport height
 let gridCols = 0;
 let gridRows = 0;
 let refreshInterval;
@@ -200,16 +191,28 @@ async function calculateOptimalGrid(numEntries, settings) {
 function setupMosaicGrid() {
     const wrapper = document.getElementById('photoMosaicWrapper');
     const grid = document.getElementById('photoMosaicGrid');
+    
+    // Calculate available space accounting for header
+    const headerHeight = 80; // Height of fixed header
+    const availableHeight = window.innerHeight - headerHeight;
+    
     wrapper.style.position = 'relative';
     wrapper.style.width = '100%';
-    wrapper.style.maxWidth = '1200px';
-    wrapper.style.margin = '0 auto';
+    wrapper.style.height = `${availableHeight}px`;
+    wrapper.style.margin = '0';
+    wrapper.style.padding = '0';
+    wrapper.style.overflow = 'hidden';
     
-    // Set grid dimensions based on calculated mosaic size
+    // Set grid dimensions
     if (grid) {
-        grid.style.width = mosaicWidth + 'px';
-        grid.style.height = mosaicHeight + 'px';
+        grid.style.width = '100%';
+        grid.style.height = '100%';
         grid.style.position = 'relative';
+        grid.style.overflow = 'hidden';
+        
+        // Update mosaic dimensions
+        mosaicWidth = wrapper.clientWidth;
+        mosaicHeight = wrapper.clientHeight;
     }
 }
 
@@ -393,11 +396,8 @@ function checkForNewEntries() {
                 
                 // Trigger celebration if there's a new entry
                 if (wasNewEntry) {
-                    // Randomly choose celebration type for automatic celebrations
-                    const celebrationTypes = ['confetti', 'diwali', 'fireworks'];
-                    const randomType = celebrationTypes[Math.floor(Math.random() * celebrationTypes.length)];
                     setTimeout(() => {
-                        startCelebration(randomType);
+                        startCelebration();
                     }, 1000); // Delay to allow grid to render first
                 }
             }
@@ -528,11 +528,6 @@ function updatePhotoMosaicGrid(entries, settings = null, animateNewest = false) 
             </div>
         `;
         
-        // Mark newest tile for animation if it's a new entry
-        if ((isNewEntry && index === entries.length - 1) || (animateNewest && index === entries.length - 1)) {
-            tile.classList.add('newest-tile');
-        }
-        
         grid.appendChild(tile);
     });
     
@@ -556,33 +551,106 @@ function updatePhotoMosaicGrid(entries, settings = null, animateNewest = false) 
     }
 }
 
-function startCelebration(effectType = 'confetti') {
-    
-    // Create effect based on type
-    switch(effectType) {
-        case 'diwali':
-            createDiwaliCrackers();
-            break;
-        case 'fireworks':
-            createFireworks();
-            break;
-        default:
-            createConfetti();
-            break;
-    }
-    
-    // Get the newest entry to display in popup
-    fetch('/api/entries')
+function startCelebration() {
+    // Fetch celebration animations from settings
+    fetch('/api/admin-settings')
         .then(response => response.json())
-        .then(entries => {
-            if (entries.length > 0) {
-                const newestEntry = entries[entries.length - 1];
-                showCelebrationPopup(newestEntry);
+        .then(settings => {
+            const availableAnimations = settings?.celebration_animations || ['confetti'];
+            console.log('Available animations:', availableAnimations);
+            
+            if (!availableAnimations || availableAnimations.length === 0) {
+                console.warn('No celebration animations available, using confetti as fallback');
+                playAnimation('confetti');
+                return;
             }
+            
+            // Randomly select one of the enabled animations
+            const effectType = availableAnimations[Math.floor(Math.random() * availableAnimations.length)];
+            console.log('Selected animation:', effectType);
+            
+            // Create multiple effects if this is a milestone entry (every 10th entry)
+            const entries = document.querySelectorAll('.photo-tile').length;
+            const isMultipleOf10 = entries % 10 === 0;
+            
+            if (isMultipleOf10 && availableAnimations.length > 1) {
+                // Show two random different animations for milestone entries
+                const otherAnimations = availableAnimations.filter(a => a !== effectType);
+                const secondEffect = otherAnimations[Math.floor(Math.random() * otherAnimations.length)];
+                console.log('Milestone entry! Playing animations:', effectType, secondEffect);
+                
+                // Play both animations with a slight delay
+                try {
+                    playAnimation(effectType);
+                    setTimeout(() => playAnimation(secondEffect), 500);
+                } catch (error) {
+                    console.error('Error playing milestone animations:', error);
+                    createConfetti(); // Fallback to confetti
+                }
+            } else {
+                // Play single animation
+                try {
+                    console.log('Playing single animation:', effectType);
+                    playAnimation(effectType);
+                } catch (error) {
+                    console.error('Error playing animation:', error);
+                    createConfetti(); // Fallback to confetti
+                }
+            }
+            
+            // Show popup with newest entry
+            fetch('/api/entries')
+                .then(response => response.json())
+                .then(entries => {
+                    if (entries.length > 0) {
+                        const newestEntry = entries[entries.length - 1];
+                        showCelebrationPopup(newestEntry);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error getting newest entry:', error);
+                });
         })
         .catch(error => {
-            console.error('Error getting newest entry:', error);
+            console.error('Error fetching celebration animation settings:', error);
+            createConfetti(); // Default to confetti on error
         });
+}
+
+function playAnimation(effectType) {
+    console.log('Playing animation:', effectType);
+    try {
+        switch(effectType) {
+            case 'diwali':
+                console.log('Creating Diwali crackers...');
+                createDiwaliCrackers();
+                break;
+            case 'fireworks':
+                console.log('Creating fireworks...');
+                createFireworks();
+                break;
+            case 'sparkle-rain':
+                console.log('Creating sparkle rain...');
+                createSparkleRain();
+                break;
+            case 'flower-burst':
+                console.log('Creating flower burst...');
+                createFlowerBurst();
+                break;
+            case 'rangoli':
+                console.log('Creating rangoli pattern...');
+                createRangoliPattern();
+                break;
+            default:
+                console.log('Using default confetti animation...');
+                createConfetti();
+                break;
+        }
+    } catch (error) {
+        console.error('Error in playAnimation:', error);
+        console.log('Falling back to confetti...');
+        createConfetti();
+    }
 }
 
 function createConfetti() {
@@ -634,11 +702,10 @@ function createFireworks() {
     
     for (let i = 0; i < 5; i++) {
         setTimeout(() => {
-            const centerX = Math.random() * 80 + 10; // 10-90% of screen width
-            const centerY = Math.random() * 60 + 20; // 20-80% of screen height
+            const centerX = Math.random() * 80 + 10;
+            const centerY = Math.random() * 60 + 20;
             const color = fireworkColors[Math.floor(Math.random() * fireworkColors.length)];
             
-            // Create multiple sparks for each firework
             for (let j = 0; j < 12; j++) {
                 const spark = document.createElement('div');
                 spark.className = 'firework';
@@ -647,30 +714,104 @@ function createFireworks() {
                 spark.style.left = centerX + '%';
                 spark.style.top = centerY + '%';
                 
-                // Random direction for each spark
-                const angle = (j * 30) + Math.random() * 15; // Spread sparks in circle
-                const distance = 50 + Math.random() * 100; // Random distance
+                const angle = (j * 30) + Math.random() * 15;
+                const distance = 50 + Math.random() * 100;
                 const radians = (angle * Math.PI) / 180;
                 const moveX = Math.cos(radians) * distance;
                 const moveY = Math.sin(radians) * distance;
                 
-                spark.style.setProperty('--move-x', moveX + 'px');
-                spark.style.setProperty('--move-y', moveY + 'px');
-                
-                // Add custom animation for movement
-                spark.style.animation = `firework-burst 1.5s ease-out forwards`;
                 spark.style.transform = `translate(${moveX}px, ${moveY}px)`;
                 
                 document.body.appendChild(spark);
                 
-                // Remove spark after animation
-                setTimeout(() => {
-                    if (spark.parentNode) {
-                        spark.remove();
-                    }
-                }, 1500);
+                setTimeout(() => spark.remove(), 1500);
             }
-        }, i * 500); // Stagger fireworks
+        }, i * 500);
+    }
+}
+
+function createSparkleRain() {
+    const colors = ['#FFD700', '#FFA500', '#FF69B4', '#7B68EE'];
+    
+    for (let i = 0; i < 30; i++) {
+        setTimeout(() => {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'sparkle';
+            sparkle.style.left = Math.random() * 100 + 'vw';
+            sparkle.style.setProperty('--x-offset', (Math.random() * 200 - 100) + 'px');
+            sparkle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            document.body.appendChild(sparkle);
+            
+            setTimeout(() => sparkle.remove(), 3000);
+        }, i * 100);
+    }
+}
+
+function createFlowerBurst() {
+    console.log('Starting flower burst animation...');
+    const colors = [
+        ['#ff6b6b', '#ffe66d'],
+        ['#4ecdc4', '#ffe66d'],
+        ['#ff8b94', '#ffd3b6']
+    ];
+    
+    // Clean up any existing animations
+    document.querySelectorAll('.flower').forEach(el => el.remove());
+    
+    for (let i = 0; i < 10; i++) {
+        setTimeout(() => {
+            const flower = document.createElement('div');
+            flower.className = 'flower';
+            flower.style.left = Math.random() * 90 + 5 + '%';
+            flower.style.top = Math.random() * 90 + 5 + '%';
+            
+            const colorPair = colors[Math.floor(Math.random() * colors.length)];
+            flower.style.background = `radial-gradient(circle, ${colorPair[0]}, ${colorPair[1]})`;
+            
+            document.body.appendChild(flower);
+            console.log(`Created flower ${i + 1} at position:`, { left: flower.style.left, top: flower.style.top });
+            
+            setTimeout(() => {
+                if (flower.parentNode) {
+                    flower.remove();
+                    console.log(`Removed flower ${i + 1}`);
+                }
+            }, 2000);
+        }, i * 200);
+    }
+}
+
+function createRangoliPattern() {
+    console.log('Starting rangoli pattern animation...');
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    const patternCount = 8;
+    
+    // Clean up any existing animations
+    document.querySelectorAll('.rangoli').forEach(el => el.remove());
+    
+    for (let i = 0; i < patternCount; i++) {
+        const rangoli = document.createElement('div');
+        rangoli.className = 'rangoli';
+        
+        const angle = (i * 360 / patternCount) * (Math.PI / 180);
+        const distance = 150;
+        const x = centerX + Math.cos(angle) * distance;
+        const y = centerY + Math.sin(angle) * distance;
+        
+        rangoli.style.left = (x - 50) + 'px';
+        rangoli.style.top = (y - 50) + 'px';
+        
+        document.body.appendChild(rangoli);
+        console.log(`Created rangoli pattern ${i + 1} at position:`, { left: rangoli.style.left, top: rangoli.style.top });
+        
+        setTimeout(() => {
+            if (rangoli.parentNode) {
+                rangoli.remove();
+                console.log(`Removed rangoli pattern ${i + 1}`);
+            }
+        }, 2000);
     }
 }
 
@@ -708,7 +849,13 @@ function showCelebrationPopup(entry) {
 }
 
 function movePopupToGrid(popupTile, overlay, entry) {
-    // Refresh the mosaic to get the newest tile positioned
+    // First, remove any existing animations from tiles
+    document.querySelectorAll('.newest-tile').forEach(tile => {
+        tile.classList.remove('newest-tile');
+        tile.removeAttribute('data-animation');
+    });
+
+    // Then refresh the mosaic
     refreshMosaic(null, false).then(() => {
         // Find the newest tile in the grid
         const gridTiles = document.querySelectorAll('.photo-tile:not(.celebration-popup)');
@@ -716,7 +863,6 @@ function movePopupToGrid(popupTile, overlay, entry) {
             const newestGridTile = gridTiles[gridTiles.length - 1];
             
             // Get target position
-            const rect = newestGridTile.getBoundingClientRect();
             const finalLeft = newestGridTile.style.left;
             const finalTop = newestGridTile.style.top;
             const finalWidth = newestGridTile.style.width;
@@ -731,36 +877,31 @@ function movePopupToGrid(popupTile, overlay, entry) {
             popupTile.style.setProperty('--final-width', finalWidth);
             popupTile.style.setProperty('--final-height', finalHeight);
             
-            // Start the falling animation
-            popupTile.classList.add('tile-falling');
+            // Show the celebration popup
+            popupTile.classList.add('celebration-popup');
             
-            // After animation completes
+            // After popup animation
             setTimeout(() => {
                 // Remove overlay and popup
                 overlay.remove();
                 
-                // Show the grid tile with a nice fade in
+                // Show the grid tile
                 newestGridTile.style.opacity = '1';
-                newestGridTile.style.transform = 'scale(1.1)';
-                newestGridTile.style.transition = 'all 0.3s ease';
                 
+                // Add auto hover effect
+                newestGridTile.classList.add('auto-hover');
+                console.log('Added hover effect');
+                
+                // Remove hover effect after 3 seconds
                 setTimeout(() => {
-                    newestGridTile.style.transform = 'scale(1)';
-                }, 100);
-            }, 1500);
+                    newestGridTile.classList.remove('auto-hover');
+                    console.log('Removed hover effect');
+                }, 3000);
+            }, 2500); // Match the popup duration
         }
     });
 }
 
-function triggerNewestTileAnimation() {
-    // Find all tiles and animate the last one (newest)
-    const tiles = document.querySelectorAll('.photo-tile');
-    if (tiles.length > 0) {
-        const newestTile = tiles[tiles.length - 1];
-        newestTile.classList.add('newest-tile');
-        animateNewTile(newestTile);
-    }
-}
 
 
 function escapeHtml(text) {

@@ -6,39 +6,39 @@
 <div class="container my-5">
     <div class="row justify-content-center">
         <div class="col-md-8 col-lg-6">
-            <div class="card">
+            <div class="card submission-card">
                 <div class="card-header text-center">
-                    <h2 class="mb-0">🎊 Share Your Celebration</h2>
-                    <p class="mb-0 text-muted">Add your message to our festive mosaic!</p>
+                    <h2 class="mb-0 heading-text">Wall of wishes</h2>
+                    <p class="mb-0 subheading-text">Add your wishes to our festive mosaic!</p>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('submit') }}">
                         <div class="mb-4">
-                            <label for="name" class="form-label">Your Name</label>
-                            <input type="text" class="form-control" id="name" name="name" maxlength="50" required 
+                            <label for="name" class="form-label custom-label">Your Name</label>
+                            <input type="text" class="form-control custom-input" id="name" name="name" maxlength="50" required 
                                    placeholder="Enter your name">
-                            <div class="form-text">Maximum 50 characters</div>
+                            <div class="form-text custom-form-text">Maximum 50 characters</div>
                         </div>
 
                         <div class="mb-4">
-                            <label for="message" class="form-label">Celebration Message</label>
-                            <textarea class="form-control" id="message" name="message" rows="3" maxlength="200" required 
+                            <label for="message" class="form-label custom-label">Celebration Message</label>
+                            <textarea class="form-control custom-input" id="message" name="message" rows="3" maxlength="200" required 
                                       placeholder="Share your festive message..."></textarea>
-                            <div class="form-text">Maximum 200 characters</div>
+                            <div class="form-text custom-form-text">Maximum 200 characters</div>
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label">Choose Your Celebratory Symbol</label>
+                            <label class="form-label custom-label">Choose Your Celebratory Symbol</label>
                             <div class="row g-2">
                                 {% for symbol in symbols %}
                                 <div class="col-12">
                                     <input type="radio" class="btn-check" name="symbol" id="symbol_{{ loop.index }}" 
                                            value="{{ symbol.filename }}" {% if loop.first %}checked{% endif %}>
-                                    <label class="btn btn-outline-primary w-100 d-flex align-items-center" 
+                                    <label class="btn btn-outline-primary symbol-selector w-100 d-flex align-items-center" 
                                            for="symbol_{{ loop.index }}">
                                         <img src="{{ url_for('static', filename='symbols/' + symbol.filename) }}" 
                                              class="symbol-preview me-3" alt="{{ symbol.label }}" width="32" height="32">
-                                        <span>{{ symbol.label }}</span>
+                                        <span class="symbol-label">{{ symbol.label }}</span>
                                     </label>
                                 </div>
                                 {% endfor %}
@@ -46,8 +46,8 @@
                         </div>
 
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                ✨ Add to Mosaic
+                            <button type="submit" class="btn btn-primary btn-lg submit-button">
+                                <span class="submit-icon">✨</span> Add to Mosaic
                             </button>
                         </div>
                     </form>

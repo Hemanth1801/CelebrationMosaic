@@ -52,7 +52,44 @@ def load_admin_settings():
     """Load admin settings from admin_settings.json"""
     default_settings = {
         "logo_filename": "logo.png",
+        "short_logo_filename": "logo_20250902_001306.png",  # Default short logo
+        "header_text": "Happy Diwali",  # Default header text
         "max_entries": 50,
+        "celebration_animations": ["confetti", "fireworks", "diwali", "sparkle-rain", "flower-burst", "rangoli"],  # All animations enabled by default
+        "color_scheme": {
+            "submission_page": {
+                "background": "#000000",
+                "text": "#ffffff",
+                "heading_text": "#ffcc00",
+                "form_background": "#1a1a1a",
+                "form_border": "#333333",
+                "input_background": "#2a2a2a",
+                "input_text": "#ffffff",
+                "input_border": "#404040",
+                "input_focus_border": "#ffcc00",
+                "label_text": "#cccccc",
+                "button_primary_bg": "#ffcc00",
+                "button_primary_text": "#000000",
+                "button_primary_hover_bg": "#ffd633",
+                "button_secondary_bg": "#404040",
+                "button_secondary_text": "#ffffff",
+                "button_secondary_hover_bg": "#4d4d4d",
+                "alert_success_bg": "#28a745",
+                "alert_success_text": "#ffffff",
+                "alert_error_bg": "#dc3545",
+                "alert_error_text": "#ffffff",
+                "symbol_selector_bg": "#2a2a2a",
+                "symbol_selector_border": "#404040",
+                "symbol_selector_active": "#ffcc00"
+            },
+            "mosaic_page": {
+                "background": "#000000",
+                "text": "#ffffff",
+                "tile_background": "#333333",
+                "tile_text": "#ffffff",
+                "tile_border": "#ffcc00"
+            }
+        },
         "grid_mode": "auto",  # "auto" or "manual"
         "grid_rows": 10,
         "grid_cols": 12,
@@ -69,6 +106,10 @@ def load_admin_settings():
             for key, value in default_settings.items():
                 if key not in settings:
                     settings[key] = value
+                # Special handling for celebration_animations
+                elif key == 'celebration_animations' and not settings[key]:
+                    # If celebration_animations is empty, use default values
+                    settings[key] = value
             return settings
     except (FileNotFoundError, json.JSONDecodeError):
         save_admin_settings(default_settings)
@@ -83,7 +124,11 @@ def save_admin_settings(settings):
 def index():
     """Render the submission form"""
     settings = load_admin_settings()
-    return render_template('index.html', symbols=settings['symbols'])
+    return render_template('index.html', 
+                         symbols=settings['symbols'], 
+                         admin_settings=settings,
+                         settings=settings,  # Pass settings both ways for compatibility
+                         body_class='entry-page')
 
 @app.route('/submit', methods=['POST'])
 def submit():
@@ -164,7 +209,10 @@ def mosaic():
         entries = data[-total_tiles:] if len(data) >= total_tiles else data
         return render_template('mosaic.html', 
                              entries=entries, 
-                             logo_filename=settings['logo_filename'])
+                             logo_filename=settings['logo_filename'],
+                             admin_settings=settings,
+                             settings=settings,  # Pass settings as both admin_settings and settings for compatibility
+                             body_class='mosaic-page')
     except Exception as e:
         logging.error(f"Error in mosaic: {e}")
         return render_template('mosaic.html', entries=[], logo_filename='logo.png')
@@ -175,8 +223,72 @@ def admin():
     settings = load_admin_settings()
     data = load_data()
     return render_template('admin.html', 
-                         settings=settings, 
-                         entry_count=len(data))
+                         settings=settings,
+                         admin_settings=settings,  # Pass settings both ways for compatibility
+                         entry_count=len(data),
+                         body_class='admin-page')
+
+@app.route('/admin/upload-color-scheme', methods=['POST'])
+def upload_color_scheme():
+    """Handle color scheme upload"""
+    try:
+        if 'color_scheme' not in request.files:
+            flash('No file selected!', 'error')
+            return redirect(url_for('admin'))
+        
+        file = request.files['color_scheme']
+        if file.filename == '':
+            flash('No file selected!', 'error')
+            return redirect(url_for('admin'))
+        
+        if file and file.filename.endswith('.json'):
+            try:
+                # Read and validate the color scheme
+                color_scheme = json.load(file)
+                
+                # Validate required sections and fields
+                required_sections = ['submission_page', 'mosaic_page']
+                required_submission_fields = ['background', 'text', 'button', 'button_text']
+                required_mosaic_fields = ['background', 'text', 'tile_background', 'tile_text', 'tile_border']
+                
+                # Check structure
+                if not all(section in color_scheme for section in required_sections):
+                    flash('Invalid color scheme format! Missing required sections.', 'error')
+                    return redirect(url_for('admin'))
+                
+                # Check submission page fields
+                if not all(field in color_scheme['submission_page'] for field in required_submission_fields):
+                    flash('Invalid submission page color scheme! Missing required fields.', 'error')
+                    return redirect(url_for('admin'))
+                
+                # Check mosaic page fields
+                if not all(field in color_scheme['mosaic_page'] for field in required_mosaic_fields):
+                    flash('Invalid mosaic page color scheme! Missing required fields.', 'error')
+                    return redirect(url_for('admin'))
+                
+                # Validate color codes (simple hex validation)
+                for section in color_scheme.values():
+                    for color in section.values():
+                        if not color.startswith('#') or not all(c in '0123456789ABCDEFabcdef' for c in color[1:]):
+                            flash('Invalid color code format! Use hex colors (e.g., #FF0000).', 'error')
+                            return redirect(url_for('admin'))
+                
+                # Update settings with new color scheme
+                settings = load_admin_settings()
+                settings['color_scheme'] = color_scheme
+                save_admin_settings(settings)
+                
+                flash('Color scheme updated successfully!', 'success')
+            except json.JSONDecodeError:
+                flash('Invalid JSON file!', 'error')
+        else:
+            flash('Invalid file type! Please upload a JSON file.', 'error')
+            
+    except Exception as e:
+        logging.error(f"Error uploading color scheme: {e}")
+        flash('An error occurred while uploading the color scheme.', 'error')
+    
+    return redirect(url_for('admin'))
 
 @app.route('/admin/upload-logo', methods=['POST'])
 def upload_logo():
@@ -191,6 +303,8 @@ def upload_logo():
             flash('No file selected!', 'error')
             return redirect(url_for('admin'))
         
+        logo_type = request.form.get('logo_type', 'main')  # 'main' or 'short'
+        
         if file and file.filename and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             # Add timestamp to avoid conflicts
@@ -202,10 +316,13 @@ def upload_logo():
             
             # Update admin settings
             settings = load_admin_settings()
-            settings['logo_filename'] = filename
+            if logo_type == 'short':
+                settings['short_logo_filename'] = filename
+            else:
+                settings['logo_filename'] = filename
             save_admin_settings(settings)
             
-            flash('Logo uploaded successfully!', 'success')
+            flash(f'{"Short" if logo_type == "short" else "Main"} logo uploaded successfully!', 'success')
         else:
             flash('Invalid file type! Please upload PNG, JPG, JPEG, GIF, or SVG files.', 'error')
             
@@ -220,6 +337,11 @@ def update_settings():
     """Update admin settings"""
     try:
         settings = load_admin_settings()
+        
+        # Update header text
+        header_text = request.form.get('header_text', '').strip()
+        if header_text:
+            settings['header_text'] = header_text
         
         # Update max entries
         max_entries = request.form.get('max_entries', type=int)
@@ -239,6 +361,16 @@ def update_settings():
             if grid_cols and grid_cols > 0 and grid_cols <= 50:
                 settings['grid_cols'] = grid_cols
         
+        # Update celebration animations
+        celebration_animations = request.form.getlist('celebration_animations[]')
+        # Default to confetti if none selected
+        if not celebration_animations:
+            celebration_animations = ['confetti']
+        # Validate animation types
+        valid_animations = ['confetti', 'fireworks', 'diwali', 'sparkle-rain', 'flower-burst', 'rangoli']
+        celebration_animations = [anim for anim in celebration_animations if anim in valid_animations]
+        settings['celebration_animations'] = celebration_animations
+        
         save_admin_settings(settings)
         flash('Settings updated successfully!', 'success')
         
@@ -252,58 +384,81 @@ def update_settings():
 def add_symbol():
     """Add a new celebratory symbol"""
     try:
-        emoji = request.form.get('emoji', '').strip()
-        label = request.form.get('label', '').strip()
-        
-        if not emoji or not label:
-            flash('Both emoji and label are required!', 'error')
+        if 'symbol_file' not in request.files:
+            flash('Symbol image file is required!', 'error')
             return redirect(url_for('admin'))
-        
+
+        file = request.files['symbol_file']
+        label = request.form.get('label', '').strip()
+
+        if file.filename == '' or not label:
+            flash('Both symbol file and label are required!', 'error')
+            return redirect(url_for('admin'))
+
+        if not file.filename.lower().endswith('.png'):
+            flash('Only PNG files are allowed for symbols!', 'error')
+            return redirect(url_for('admin'))
+
         settings = load_admin_settings()
-        
-        # Check if symbol already exists
-        for symbol in settings['symbols']:
-            if symbol['emoji'] == emoji:
-                flash('This symbol already exists!', 'error')
-                return redirect(url_for('admin'))
-        
-        settings['symbols'].append({'emoji': emoji, 'label': label})
+
+        # Create a unique filename for the symbol
+        filename = secure_filename(f"symbol_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+
+        # Ensure the symbols directory exists
+        symbols_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'symbols')
+        os.makedirs(symbols_dir, exist_ok=True)
+
+        # Save the file
+        file_path = os.path.join(symbols_dir, filename)
+        file.save(file_path)
+
+        # Add the symbol to settings
+        settings['symbols'].append({'filename': filename, 'label': label})
         save_admin_settings(settings)
-        
+
         flash('Symbol added successfully!', 'success')
-        
+
     except Exception as e:
         logging.error(f"Error adding symbol: {e}")
         flash('An error occurred while adding the symbol.', 'error')
-    
+
     return redirect(url_for('admin'))
 
 @app.route('/admin/remove-symbol', methods=['POST'])
 def remove_symbol():
     """Remove a celebratory symbol"""
     try:
-        emoji = request.form.get('emoji', '').strip()
-        
-        if not emoji:
+        filename = request.form.get('filename', '').strip()
+
+        if not filename:
             flash('Invalid symbol!', 'error')
             return redirect(url_for('admin'))
-        
+
         settings = load_admin_settings()
-        
+
         # Don't allow removing all symbols
         if len(settings['symbols']) <= 1:
             flash('Cannot remove the last symbol!', 'error')
             return redirect(url_for('admin'))
-        
-        settings['symbols'] = [s for s in settings['symbols'] if s['emoji'] != emoji]
+
+        # Find and remove the symbol file
+        symbol_path = os.path.join(app.config['UPLOAD_FOLDER'], 'symbols', filename)
+        try:
+            os.remove(symbol_path)
+        except FileNotFoundError:
+            # If file doesn't exist, just log it but continue
+            logging.warning(f"Symbol file not found: {symbol_path}")
+
+        # Update settings
+        settings['symbols'] = [s for s in settings['symbols'] if s['filename'] != filename]
         save_admin_settings(settings)
-        
+
         flash('Symbol removed successfully!', 'success')
-        
+
     except Exception as e:
         logging.error(f"Error removing symbol: {e}")
         flash('An error occurred while removing the symbol.', 'error')
-    
+
     return redirect(url_for('admin'))
 
 @app.route('/admin/clear-entries', methods=['POST'])
@@ -339,6 +494,7 @@ def api_admin_settings():
         return jsonify({"logo_filename": "logo.png", "max_entries": 50, "symbols": []})
 
 if __name__ == '__main__':
-    # Ensure static directory exists
+    # Ensure static and symbols directories exist
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    os.makedirs(os.path.join(UPLOAD_FOLDER, 'symbols'), exist_ok=True)
     app.run(host='0.0.0.0', port=5000, debug=True)
